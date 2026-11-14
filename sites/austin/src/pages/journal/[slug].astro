@@ -32,7 +32,7 @@ const canonical = absoluteUrl(`/journal/${post.id}/`);
   published={post.data.date}
   jsonLd={articleGraph(post, canonical)}
 >
-  <ContentPanel>
+  <ContentPanel class="shard-title">
     {post.data.draft && <DraftBanner />}
     <a class="back-link" href="/journal/">Journal</a>
     <p class="kicker" style="--mark: var(--color-violet)">
@@ -54,6 +54,8 @@ const canonical = absoluteUrl(`/journal/${post.id}/`);
         </ul>
       )
     }
+  </ContentPanel>
+  <ContentPanel class="shard-read">
     {post.data.video && <VideoFacade url={post.data.video} title={post.data.title} />}
     <div class="prose">
       <Content />

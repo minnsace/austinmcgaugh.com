@@ -254,3 +254,35 @@ export function isReadingPath(pathname: string): boolean {
   if (parts[1] === "tags" || parts[1] === "rss.xml") return false;
   return parts[0] === "journal" || parts[0] === "projects";
 }
+
+/** How far the Quest panel arc sits in front of the headset, in metres. */
+export const VR_PANEL_DISTANCE = 1.28;
+
+export interface VrPlate {
+  x: number;
+  y: number;
+  z: number;
+  yaw: number;
+  width: number;
+  height: number;
+  /** Metres from the eye to the plate. */
+  distance: number;
+}
+
+/**
+ * Three glass plates in a gentle arc, each facing the wearer.
+ * Local +Z points back at the camera. Distances stay between 1.2 m and 1.5 m.
+ */
+export function vrPlateLayout(): VrPlate[] {
+  const specs = [
+    { x: -0.62, y: -0.05, z: -0.05, width: 0.56, height: 0.4 },
+    { x: 0, y: -0.08, z: 0.08, width: 0.46, height: 0.34 },
+    { x: 0.62, y: -0.05, z: -0.05, width: 0.52, height: 0.38 },
+  ];
+  return specs.map((spec) => {
+    const depth = VR_PANEL_DISTANCE - spec.z;
+    const distance = Math.hypot(spec.x, spec.y, depth);
+    const yaw = Math.atan2(-spec.x, depth);
+    return { ...spec, yaw, distance };
+  });
+}

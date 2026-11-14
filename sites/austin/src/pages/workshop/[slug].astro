@@ -20,7 +20,7 @@ const { Content } = await render(update);
 ---
 
 <Base title={update.data.title} description={update.data.description} current="workshop" ogType="article" published={update.data.date}>
-  <ContentPanel>
+  <ContentPanel class="shard-title">
     {update.data.draft && <DraftBanner />}
     <a class="back-link" href="/workshop/">Workshop</a>
     <p class="kicker" style="--mark: var(--color-amber)">Progress note</p>
@@ -28,6 +28,8 @@ const { Content } = await render(update);
     <div class="post-meta">
       <time datetime={update.data.date.toISOString()}>{formatDate(update.data.date)}</time>
     </div>
+  </ContentPanel>
+  <ContentPanel class="shard-read">
     <div class="prose">
       <Content />
     </div>

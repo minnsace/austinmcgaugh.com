@@ -22,6 +22,7 @@ import {
   RIM_RADIUS,
   smoothstep,
   stanceIdFromPath,
+  vrPlateLayout,
 } from "../src/layout.ts";
 import { readForgeChoice, resolveQuality, shouldStartForge } from "../src/index.ts";
 
@@ -108,4 +109,19 @@ test("the visitor stands at eye level and routes name a stance", () => {
   assert.equal(kitFile("Crystals_01", false), "/models/Crystals_01_web.glb");
   assert.equal(kitFile("Bridge_Landing", true), "/models/quest/Bridge_Landing_quest.glb");
   assert.equal(crystalSpots(0).length, 5);
+});
+
+test("quest plates form an arc 1.2 to 1.5 metres from the eye", () => {
+  const plates = vrPlateLayout();
+  assert.equal(plates.length, 3);
+  const [left, center, right] = plates;
+  assert.ok(left && center && right);
+  for (const plate of plates) {
+    assert.ok(plate.distance >= 1.2 && plate.distance <= 1.5, `distance ${plate.distance}`);
+  }
+  assert.ok(left.x < center.x && center.x < right.x);
+  assert.ok(center.distance < left.distance && center.distance < right.distance);
+  assert.ok(left.yaw > 0.15 && right.yaw < -0.15);
+  const gap = center.x - left.x - left.width / 2 - center.width / 2;
+  assert.ok(gap > 0.05, `gap ${gap}`);
 });

@@ -31,7 +31,7 @@ const canonical = absoluteUrl(`/projects/${project.id}/`);
   published={project.data.date}
   jsonLd={projectGraph(project, canonical)}
 >
-  <ContentPanel>
+  <ContentPanel class="shard-title">
     <a class="back-link" href="/projects/">All projects</a>
     <PageHeader
       kicker={project.data.kind}
@@ -67,6 +67,8 @@ const canonical = absoluteUrl(`/projects/${project.id}/`);
         )
       }
     </p>
+  </ContentPanel>
+  <ContentPanel class="shard-read">
     <div class="prose">
       <Content />
     </div>

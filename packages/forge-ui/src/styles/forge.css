@@ -363,6 +363,10 @@ h1,
   margin-top: 1.5rem;
 }
 
+.cluster:empty {
+  display: none;
+}
+
 .button,
 .text-link,
 .email-link {
@@ -940,9 +944,9 @@ body.is-world:not(.is-list) .social-list {
 }
 
 body.is-world.is-narrow .site-footer {
-  left: 0.5rem;
-  bottom: calc(52vh + 0.55rem);
-  max-width: calc(100% - 6.5rem);
+  left: 0.4rem;
+  bottom: calc(min(46dvh, 420px) + 0.4rem);
+  max-width: calc(100% - 12rem);
 }
 
 body.is-world:not(.is-list) .forge-stage::after {
@@ -967,92 +971,522 @@ body.is-world:not(.is-list) .forge-stage::after {
   width: 820px;
   max-height: none;
   overflow: visible;
-  padding: 1.35rem 1.5rem 1.45rem;
+  padding: 0;
   color: var(--color-ink);
-  font-size: 1.2rem;
-  line-height: 1.45;
-  background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.04) 22%, rgba(8, 10, 18, 0.18) 100%),
-    rgba(12, 16, 24, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.62);
-  border-radius: 22px;
-  box-shadow:
-    0 28px 70px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.75),
-    inset 0 -18px 36px rgba(94, 231, 216, 0.05);
-  backdrop-filter: blur(22px) saturate(1.55);
-  -webkit-backdrop-filter: blur(22px) saturate(1.55);
-  pointer-events: auto;
-  transform-origin: 0 0;
-}
-
-body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active {
-  position: fixed;
-  left: 1.35rem;
-  top: 5.4rem;
-  width: min(560px, 46vw);
-  max-height: calc(100vh - 11rem);
-  overflow: auto;
-  transform: none;
-  z-index: 12;
-}
-
-body.is-world .forge-glass {
-  transition: opacity 280ms ease;
-}
-
-body.is-world.is-traveling .forge-glass.is-active {
-  opacity: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   pointer-events: none;
 }
 
-body.is-world:not(.is-list) .forge-glass h1,
-body.is-world:not(.is-list) .forge-glass .page-header h1,
-body.is-world:not(.is-list) .forge-glass .panel-hero h1 {
-  font-size: 2.7rem;
-  line-height: 1.05;
+@keyframes forge-assemble {
+  from {
+    opacity: 0;
+    filter: blur(12px) saturate(0.7);
+  }
+
+  to {
+    opacity: 1;
+    filter: none;
+  }
 }
 
-body.is-world:not(.is-list) .forge-glass .latest-grid,
-body.is-world:not(.is-list) .forge-glass .portal-grid {
-  gap: 0.65rem;
+@keyframes forge-sheet {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+body.is-world .forge-glass {
+  transition: opacity 280ms ease, filter 280ms ease;
+}
+
+body.is-world.is-traveling .forge-glass.is-active,
+body.is-world.is-traveling .forge-preview {
+  opacity: 0;
+  filter: blur(8px);
+}
+
+body.is-world.is-traveling .forge-glass.is-active,
+body.is-world.is-traveling .forge-glass.is-active * ,
+body.is-world.is-traveling .forge-preview {
+  pointer-events: none !important;
 }
 
 body.is-world:not(.is-list) .forge-glass .site-main {
   width: auto;
   margin: 0;
   padding: 0;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  z-index: 12;
+  pointer-events: none;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .site-main {
   display: block;
 }
 
-body.is-world:not(.is-list) .forge-glass .panel {
-  background: transparent;
-  border-color: transparent;
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active :is(
+  .panel-hero,
+  .shard-title,
+  .shard-read,
+  .shard-chips,
+  .shard-rail .latest-card,
+  .shard-rail .feed-card
+) {
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.05) 28%, rgba(8, 10, 18, 0.16) 100%),
+    rgba(10, 14, 22, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  box-shadow:
+    0 22px 54px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    inset 0 -16px 30px rgba(94, 231, 216, 0.05);
+  backdrop-filter: blur(22px) saturate(1.55);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  color: var(--color-ink);
+}
+
+body.is-world:not(.is-list):not(.is-narrow):not(.is-traveling) .forge-glass.is-active :is(
+  .panel-hero,
+  .shard-title,
+  .shard-read,
+  .shard-chips,
+  .shard-rail .latest-card,
+  .shard-rail .feed-card
+) {
+  animation: forge-assemble 0.72s cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips {
+  animation-delay: 0.08s;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-read {
+  animation-delay: 0.12s;
+  z-index: 12;
+  box-shadow:
+    0 34px 80px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail li:nth-child(2) :is(.latest-card, .feed-card) {
+  animation-delay: 0.1s;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail li:nth-child(3) :is(.latest-card, .feed-card) {
+  animation-delay: 0.18s;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail li:nth-child(4) :is(.latest-card, .feed-card) {
+  animation-delay: 0.26s;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .panel:not(.shard-rail):not(.shard-chips):not(.shard-read) {
+  position: fixed;
+  top: 5.55rem;
+  left: 1.25rem;
+  width: min(360px, 30vw);
+  max-height: calc(100dvh - 10.4rem);
+  margin: 0;
+  overflow: auto;
+  z-index: 13;
+  padding: 1.2rem 1.3rem 1.3rem;
+  border-radius: 24px;
+  pointer-events: auto;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-read {
+  position: fixed;
+  top: 5.55rem;
+  right: 1.25rem;
+  left: auto;
+  width: min(420px, 34vw);
+  max-height: calc(100dvh - 10.4rem);
+  margin: 0;
+  overflow: auto;
+  padding: 1.2rem 1.3rem 1.35rem;
+  border-radius: 24px;
+  pointer-events: auto;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active:has(.shard-rail) .shard-read {
+  max-height: min(34vh, 320px);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail {
+  position: fixed;
+  top: 5.55rem;
+  right: 1.25rem;
+  bottom: 4.9rem;
+  left: auto;
+  width: min(312px, 28vw);
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  overflow: auto;
+  background: none;
+  border: 0;
   box-shadow: none;
-  padding: 0.2rem 0.1rem 0.4rem;
+  backdrop-filter: none;
+  pointer-events: auto;
+  z-index: 13;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(244, 240, 230, 0.35) transparent;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active:has(.shard-read) .shard-rail {
+  top: auto;
+  height: min(30vh, 280px);
+  max-height: min(30vh, 280px);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips {
+  position: fixed;
+  top: 5.55rem;
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: min(520px, 40vw);
+  margin: 0;
+  padding: 0.4rem;
+  border-radius: 999px;
+  z-index: 15;
+  pointer-events: auto;
+  box-shadow:
+    0 14px 32px rgba(0, 0, 0, 0.32),
+    inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips > h2,
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail > h2 {
+  margin: 0 0.15rem;
+  font-family: var(--font-body);
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  line-height: 1.2;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips > h2 {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips .portal-grid,
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(.latest-grid, .feed) {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(.latest-grid, .feed) {
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips .portal-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 44px;
+  padding: 0.3rem 0.8rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips .portal-card p {
+  display: none;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips .portal-card h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 1;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail nav {
+  padding: 0.4rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.04) 30%, rgba(8, 10, 18, 0.16)),
+    rgba(10, 14, 22, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.42);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail .empty {
+  padding: 1rem 1.05rem;
+  border-radius: 18px;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.05) 28%, rgba(8, 10, 18, 0.16) 100%),
+    rgba(10, 14, 22, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(.latest-card, .feed-card) {
+  min-height: 0;
+  height: auto;
+  gap: 0.4rem;
+  padding: 0.95rem 1rem 1.05rem;
+  border-radius: 18px;
+  pointer-events: auto;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(.latest-card, .feed-card) p {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(.latest-card, .feed-card):hover,
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(.latest-card, .feed-card):focus-visible,
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .is-picked {
+  border-color: rgba(255, 255, 255, 0.86);
+  box-shadow:
+    0 20px 46px rgba(0, 0, 0, 0.48),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail :is(h2, h3) {
+  font-size: 1.45rem;
+  line-height: 1.12;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-rail > h2 {
+  font-size: 0.74rem;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active :is(.panel-hero, .shard-title) :is(h1, .page-header h1) {
+  font-size: clamp(1.85rem, 2.3vw, 2.45rem);
+  line-height: 1.02;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .lede {
+  margin-top: 0.75rem;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active :is(.hero-actions, .cluster) {
+  margin-top: 1rem;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-read .prose {
+  margin-top: 0;
+  max-width: none;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .about-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .portrait {
+  width: min(100%, 220px);
+}
+
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .tag-list {
+  margin-bottom: 0;
+}
+
+.forge-preview {
+  position: fixed;
+  z-index: 18;
+  left: 0;
+  right: 0;
+  bottom: 4.85rem;
+  width: min(440px, 36vw);
+  margin-inline: auto;
+  padding: 1rem 1.15rem 1.1rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0.06) 24%, rgba(8, 10, 18, 0.2) 100%),
+    rgba(10, 14, 22, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.66);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.46),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(22px) saturate(1.55);
+  -webkit-backdrop-filter: blur(22px) saturate(1.55);
+  color: var(--color-ink);
+  pointer-events: auto;
+}
+
+.forge-preview:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+body.is-world:not(.is-list):not(.is-narrow):not(.is-traveling) .forge-preview:not([hidden]) {
+  animation: forge-assemble 0.38s cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+.forge-preview .kicker {
+  margin-bottom: 0.35rem;
+}
+
+.forge-preview h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 1.85rem;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.forge-preview p {
+  margin: 0.45rem 0 0;
+}
+
+.forge-preview .text-link {
+  margin-top: 0.8rem;
+}
+
+body.is-list .forge-preview,
+body.is-narrow .forge-preview {
+  display: none !important;
+}
+
+@media (max-width: 1180px) {
+  body.is-world:not(.is-list):not(.is-narrow) .forge-preview {
+    display: none !important;
+  }
+
+  body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active .shard-chips {
+    top: auto;
+    bottom: 4.75rem;
+    max-width: min(420px, 42vw);
+  }
 }
 
 body.is-world.is-narrow .forge-glass.is-active {
   position: fixed;
-  left: 0.5rem;
-  right: 0.5rem;
-  bottom: 0.5rem;
+  left: 0;
+  right: 0;
+  bottom: 0;
   top: auto;
   width: auto;
-  max-height: 46vh;
-  overflow: auto;
-  transform: none !important;
+  height: min(46dvh, 420px);
+  max-height: none;
+  display: flex;
+  padding: 0.65rem 0.7rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 0.7rem;
+  overscroll-behavior-x: contain;
+  background: linear-gradient(180deg, transparent, rgba(6, 8, 14, 0.28) 22%);
   z-index: 16;
+  pointer-events: auto;
 }
 
 body.is-world.is-narrow .forge-glass:not(.is-active) {
   display: none;
 }
 
+body.is-world.is-narrow .forge-glass.is-active .site-main {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.75rem;
+  width: max-content;
+  height: 100%;
+  padding: 0;
+}
+
+body.is-world.is-narrow .forge-glass.is-active .panel {
+  flex: 0 0 min(86vw, 380px);
+  width: min(86vw, 380px);
+  height: 100%;
+  max-height: 100%;
+  margin: 0;
+  overflow: auto;
+  scroll-snap-align: center;
+  padding: 1.15rem 1.15rem 1.25rem;
+  border-radius: 22px;
+  background:
+    linear-gradient(165deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.05) 26%, rgba(8, 10, 18, 0.18) 100%),
+    rgba(10, 14, 22, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 18px 44px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(18px) saturate(1.45);
+  -webkit-backdrop-filter: blur(18px) saturate(1.45);
+  pointer-events: auto;
+}
+
+body.is-world.is-narrow:not(.is-traveling) .forge-glass.is-active .panel {
+  animation: forge-sheet 0.55s cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+body.is-world.is-narrow:not(.is-traveling) .forge-glass.is-active .panel:nth-child(2) {
+  animation-delay: 0.07s;
+}
+
+body.is-world.is-narrow:not(.is-traveling) .forge-glass.is-active .panel:nth-child(3) {
+  animation-delay: 0.14s;
+}
+
+body.is-world.is-narrow .forge-glass.is-active :is(h1, .page-header h1, .panel-hero h1) {
+  font-size: 1.9rem;
+  line-height: 1.05;
+}
+
+body.is-world.is-narrow .forge-glass.is-active :is(.latest-grid, .feed, .portal-grid) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+body.is-world.is-narrow .forge-glass.is-active :is(.latest-card, .feed-card, .portal-card) {
+  min-height: 0;
+}
+
 body.is-world.is-narrow .forge-controls {
   top: auto;
-  bottom: calc(52vh + 0.9rem);
-  right: 0.5rem;
+  right: 0.4rem;
+  bottom: calc(min(46dvh, 420px) + 0.4rem);
+  max-width: 11rem;
+}
+
+body.is-world.is-narrow .site-footer .social-list {
+  display: none;
 }
 
 @media (max-width: 800px) {

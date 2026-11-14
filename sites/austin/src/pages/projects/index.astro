@@ -10,8 +10,10 @@ const description = "Software and games by Austin McGaugh.";
 ---
 
 <Base title="Projects" description={description} current="projects" jsonLd={projectListGraph(projects)}>
-  <ContentPanel>
+  <ContentPanel class="shard-title">
     <PageHeader kicker="Work" title="Projects" intro={description} symbol="cube" tone="electric" />
+  </ContentPanel>
+  <ContentPanel class="shard-rail">
     <ol class="feed">
       {
         projects.map((project) => (

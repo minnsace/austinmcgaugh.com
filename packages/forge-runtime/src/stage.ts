@@ -52,7 +52,7 @@ import type { QualityTier } from "./index.ts";
 import { dressForgeGlass, moltenTime } from "./glass.ts";
 import { HUB_INSTANCES, type HubInstance } from "./hub.ts";
 import { createForgeSound, type ForgeSound } from "./sound.ts";
-import { plazaStance, smoothstep, stanceFor } from "./layout.ts";
+import { plazaStance, smoothstep, stanceFor, VR_PANEL_DISTANCE, vrPlateLayout } from "./layout.ts";
 
 export interface PortalSpec {
   id: string;
@@ -124,7 +124,6 @@ const up = new Vector3(0, 1, 0);
 
 const YAW_LIMIT = 2.35;
 const PITCH_LIMIT = 0.42;
-const VR_PANEL_DISTANCE = 1.35;
 
 export async function startStage(host: HTMLElement, options: StageOptions): Promise<StageHandle> {
   const desktop = options.tier === "high";
@@ -666,7 +665,6 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
         if (!active) continue;
         slot.root.position.copy(xrCamera.position).addScaledVector(viewForward, VR_PANEL_DISTANCE);
         slot.root.quaternion.copy(xrCamera.quaternion);
-        slot.label.scale.set(1.22 / 2.2, 0.78 / 1.32, 1);
       }
     } else {
       for (const slot of glassSlots) slot.label.visible = false;
@@ -1104,7 +1102,7 @@ interface GlassSlot {
   id: string;
   element: HTMLElement | null;
   root: Group;
-  label: Mesh;
+  label: Object3D;
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -1202,48 +1200,88 @@ function makeGlass(scene: Scene, panels: GlassPanel[]): GlassSlot[] {
     const element = panels.find((panel) => panel.id === id)?.element ?? null;
     const root = new Group();
     root.userData.noGround = true;
-    const label = makeLabel(id);
-    label.position.z = 0.02;
+    const label = makeArc(id);
     label.visible = false;
-    label.userData.noGround = true;
     root.add(label);
     scene.add(root);
     return { id, element, root, label };
   });
 }
 
-function makeLabel(id: string) {
+const ARC_COPY: Record<string, { title: string; line: string }[]> = {
+  plaza: [
+    { title: "The Forge", line: "Standing on the plaza." },
+    { title: "Latest", line: "Projects, journal, and workshop." },
+    { title: "Sections", line: "Look, then select." },
+  ],
+  projects: [
+    { title: "Projects", line: "Software and games." },
+    { title: "In progress", line: "The Lethecary is in development." },
+    { title: "Open", line: "Select a project." },
+  ],
+  journal: [
+    { title: "Journal", line: "Articles and videos." },
+    { title: "Notes", line: "Read beside the portal." },
+    { title: "Open", line: "Select an article." },
+  ],
+  workshop: [
+    { title: "Workshop", line: "Minnsace Inc." },
+    { title: "Studio", line: "Software and games." },
+    { title: "Open", line: "Select a note." },
+  ],
+};
+
+function makeArc(id: string) {
+  const group = new Group();
+  group.userData.noGround = true;
+  const copy = ARC_COPY[id] ?? ARC_COPY.plaza;
+  for (const [index, plate] of vrPlateLayout().entries()) {
+    const mesh = makePlate(copy[index]?.title ?? "", copy[index]?.line ?? "", plate.width, plate.height);
+    mesh.position.set(plate.x, plate.y, plate.z);
+    mesh.rotation.y = plate.yaw;
+    mesh.userData.noGround = true;
+    group.add(mesh);
+  }
+  return group;
+}
+
+function makePlate(title: string, line: string, width: number, height: number) {
   const canvas = document.createElement("canvas");
   canvas.width = 1024;
-  canvas.height = 640;
+  canvas.height = Math.max(320, Math.round(1024 * (height / width)));
   const context = canvas.getContext("2d");
-  const titles: Record<string, string> = {
-    plaza: "The Forge",
-    projects: "Projects",
-    journal: "Journal",
-    workshop: "Workshop",
-  };
-  const lines: Record<string, string> = {
-    plaza: "Standing on the plaza.",
-    projects: "Software and games.",
-    journal: "Articles and videos.",
-    workshop: "Minnsace Inc.",
-  };
   if (context) {
     context.clearRect(0, 0, canvas.width, canvas.height);
+    paintGlass(context, 28, 28, canvas.width - 56, canvas.height - 56, 64);
     context.fillStyle = "#f4f0e6";
-    context.font = "600 84px sans-serif";
-    context.fillText(titles[id] ?? id, 72, 200);
+    context.font = "600 68px sans-serif";
+    context.fillText(title, 78, Math.round(canvas.height * 0.4));
     context.fillStyle = "#c3bdb2";
-    context.font = "40px sans-serif";
-    context.fillText(lines[id] ?? "", 72, 280);
+    context.font = "36px sans-serif";
+    wrapText(context, line, 78, Math.round(canvas.height * 0.4) + 72, canvas.width - 156, 48);
   }
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
+  texture.needsUpdate = true;
   return new Mesh(
-    new PlaneGeometry(2.2, 1.32),
+    new PlaneGeometry(width, height),
     new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }),
   );
+}
+
+function paintGlass(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  context.beginPath();
+  context.moveTo(x + radius, y);
+  context.arcTo(x + width, y, x + width, y + height, radius);
+  context.arcTo(x + width, y + height, x, y + height, radius);
+  context.arcTo(x, y + height, x, y, radius);
+  context.arcTo(x, y, x + width, y, radius);
+  context.closePath();
+  context.fillStyle = "rgba(12, 16, 24, 0.62)";
+  context.fill();
+  context.lineWidth = 6;
+  context.strokeStyle = "rgba(255, 255, 255, 0.72)";
+  context.stroke();
 }
 
 function sharpenTextures(root: Object3D, anisotropy: number) {

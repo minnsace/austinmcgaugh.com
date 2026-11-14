@@ -17,8 +17,10 @@ const description = `Articles and videos tagged ${name}.`;
 ---
 
 <Base title={name} description={description} current="journal">
-  <ContentPanel>
+  <ContentPanel class="shard-title">
     <PageHeader kicker="Journal" title={name} intro={description} symbol="book" tone="violet" />
+  </ContentPanel>
+  <ContentPanel class="shard-rail">
     <JournalList posts={posts} activeTag={tag} />
   </ContentPanel>
 </Base>

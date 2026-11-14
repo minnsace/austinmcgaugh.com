@@ -36,6 +36,98 @@ export function createWorld(): WorldController {
   });
   document.body.append(root);
 
+  const preview = document.createElement("aside");
+  preview.className = "forge-preview";
+  preview.hidden = true;
+  const previewKicker = document.createElement("p");
+  previewKicker.className = "kicker";
+  const previewTitle = document.createElement("h2");
+  const previewCopy = document.createElement("p");
+  const previewLink = document.createElement("a");
+  previewLink.className = "text-link";
+  previewLink.textContent = "Open";
+  preview.append(previewKicker, previewTitle, previewCopy, previewLink);
+  root.append(preview);
+
+  let previewTimer = 0;
+  let suppressPreview = 0;
+  let picked: HTMLElement | null = null;
+
+  function clearPicked() {
+    picked?.classList.remove("is-picked");
+    picked = null;
+  }
+
+  function hidePreview() {
+    window.clearTimeout(previewTimer);
+    preview.hidden = true;
+    clearPicked();
+  }
+
+  function cardOf(target: EventTarget | null) {
+    if (!(target instanceof Element)) return null;
+    const card = target.closest<HTMLAnchorElement>(".latest-card, .feed-card, .portal-card");
+    if (!card || !card.closest(".forge-glass.is-active")) return null;
+    return card;
+  }
+
+  function showPreview(card: HTMLAnchorElement) {
+    if (listed() || narrow() || performance.now() < suppressPreview) {
+      hidePreview();
+      return;
+    }
+    const kicker =
+      card.querySelector(".kicker")?.textContent?.trim() ||
+      card.querySelector(".badge")?.textContent?.trim() ||
+      "Selected";
+    const title = card.querySelector("h2, h3")?.textContent?.trim() || "Open";
+    const copy =
+      [...card.querySelectorAll("p")].map((node) => node.textContent?.trim() ?? "").find((line) => line && line !== kicker) ??
+      "";
+    previewKicker.textContent = kicker;
+    previewTitle.textContent = title;
+    previewCopy.textContent = copy;
+    previewCopy.hidden = copy.length === 0;
+    previewLink.href = card.href;
+    previewLink.setAttribute("aria-label", `Open ${title}`);
+    preview.hidden = false;
+    if (picked !== card) {
+      clearPicked();
+      picked = card;
+      card.classList.add("is-picked");
+    }
+  }
+
+  document.addEventListener("pointerover", (event) => {
+    const card = cardOf(event.target);
+    if (!card) return;
+    window.clearTimeout(previewTimer);
+    showPreview(card);
+  });
+  document.addEventListener("pointerout", (event) => {
+    const card = cardOf(event.target);
+    if (!card) return;
+    const next = event.relatedTarget;
+    if (next instanceof Node && (card.contains(next) || preview.contains(next))) return;
+    window.clearTimeout(previewTimer);
+    previewTimer = window.setTimeout(() => {
+      if (preview.matches(":hover")) return;
+      hidePreview();
+    }, 180);
+  });
+  document.addEventListener("focusin", (event) => {
+    const card = cardOf(event.target);
+    if (card) showPreview(card);
+  });
+  document.addEventListener("focusout", () => {
+    window.clearTimeout(previewTimer);
+    previewTimer = window.setTimeout(() => {
+      const active = document.activeElement;
+      if (active && (preview.contains(active) || cardOf(active))) return;
+      hidePreview();
+    }, 120);
+  });
+
   const listToggle = document.querySelector<HTMLAnchorElement>(".list-toggle");
   const skip = document.querySelector<HTMLAnchorElement>(".skip-link");
   const narrowQuery = window.matchMedia("(max-width: 800px)");
@@ -96,6 +188,7 @@ export function createWorld(): WorldController {
       mount(stance);
     }
     handle.setPresentation(presentation());
+    if (on || narrow()) hidePreview();
   }
 
   function setList(on: boolean) {
@@ -180,6 +273,8 @@ export function createWorld(): WorldController {
     }
     reading = nextReading;
     stance = nextStance;
+    suppressPreview = performance.now() + 700;
+    hidePreview();
     handle.goTo(nextStance, { fly: true, reading: nextReading });
     if (push) history.pushState({ stance: nextStance }, "", path);
     if (!listed()) mount(nextStance);
@@ -190,6 +285,7 @@ export function createWorld(): WorldController {
         main.innerHTML = page.html;
         armVideos(main);
       }
+      hidePreview();
       if (page.title) document.title = page.title;
       const canonical = document.querySelector('link[rel="canonical"]');
       if (canonical) canonical.setAttribute("href", new URL(url.pathname, "https://austinmcgaugh.com").href);
@@ -224,6 +320,7 @@ export function createWorld(): WorldController {
     const url = new URL(window.location.href);
     reading = isReadingPath(url.pathname);
     stance = stanceIdFromPath(url.pathname);
+    hidePreview();
     handle.goTo(stance, { fly: true, reading });
     if (!listed()) mount(stance);
     markNav(url.pathname);

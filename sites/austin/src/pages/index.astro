@@ -28,7 +28,7 @@ const description =
       <a class="text-link" href="/about/">About Austin</a>
     </div>
   </ContentPanel>
-  <ContentPanel>
+  <ContentPanel class="shard-rail">
     <h2>Latest</h2>
     <LatestStrip
       article={posts.find((post) => post.data.type === "article")}
@@ -37,7 +37,7 @@ const description =
       update={updates[0]}
     />
   </ContentPanel>
-  <ContentPanel>
+  <ContentPanel class="shard-chips">
     <h2>Sections</h2>
     <PortalGrid portals={brand.portals} />
   </ContentPanel>
