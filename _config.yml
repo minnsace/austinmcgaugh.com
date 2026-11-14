@@ -1,0 +1,16 @@
+title: Austin McGaugh
+email: contact@austinmcgaugh.com
+description: Personal site of Austin McGaugh, XR engineer and founder of Minnsace Inc.
+url: https://austinmcgaugh.com
+baseurl: ""
+markdown: kramdown
+permalink: /writing/:title/
+
+plugins:
+  - jekyll-feed
+
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - README.md
+  - vendor
