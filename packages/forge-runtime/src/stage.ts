@@ -3,20 +3,27 @@ import {
   AgXToneMapping,
   AmbientLight,
   BackSide,
+  BoxGeometry,
   CanvasTexture,
   Color,
   CylinderGeometry,
+  DoubleSide,
   EquirectangularReflectionMapping,
+  Euler,
   Group,
   HemisphereLight,
+  LinearMipmapLinearFilter,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
+  MeshPhysicalMaterial,
   MeshStandardMaterial,
-  type Object3D,
+  Object3D,
   PerspectiveCamera,
   PlaneGeometry,
+  Quaternion,
   Raycaster,
+  RepeatWrapping,
   RingGeometry,
   Scene,
   SphereGeometry,
@@ -27,20 +34,30 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { HDRLoader } from "three/addons/loaders/HDRLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { MeshoptDecoder } from "three/addons/libs/meshopt_decoder.module.js";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { FXAAPass } from "three/addons/postprocessing/FXAAPass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { XRHandModelFactory } from "three/addons/webxr/XRHandModelFactory.js";
 import type { QualityTier } from "./index.ts";
-import { islandPlacement, PORTAL_LOCAL } from "./layout.ts";
+import {
+  bridgeRun,
+  crystalSpots,
+  islandPlacement,
+  panelAnchor,
+  plazaStance,
+  PORTAL_LOCAL,
+  smoothstep,
+  stanceFor,
+  type Stance,
+} from "./layout.ts";
 
 export interface PortalSpec {
   id: string;
@@ -53,23 +70,45 @@ export interface PortalSpec {
   color: number;
 }
 
+export interface KitPiece {
+  id: string;
+  file: string;
+}
+
 export interface StageAssets {
   forge: string;
   island: string;
   env: string;
   portals: PortalSpec[];
+  bridges?: KitPiece[];
+  crystals?: KitPiece[];
   dracoPath?: string;
   basisPath?: string;
 }
 
+export interface GlassPanel {
+  id: string;
+  element: HTMLElement;
+}
+
+export type StagePresentation = "world" | "list" | "dock";
+
 export interface StageOptions {
   tier: Exclude<QualityTier, "quiet">;
   assets: StageAssets;
+  initialStance?: string;
+  initialReading?: boolean;
+  reducedMotion?: boolean;
+  panels?: GlassPanel[];
+  onNavigate?: (href: string) => void;
 }
 
 export interface StageHandle {
   dispose: () => void;
   enterVR: () => Promise<void>;
+  goTo: (id: string, options?: { fly?: boolean; reading?: boolean }) => void;
+  setPresentation: (mode: StagePresentation) => void;
+  enableMotion: () => Promise<boolean>;
 }
 
 interface Bob {
@@ -83,11 +122,16 @@ const pointer = new Vector2();
 const tempMatrix = new Matrix4();
 const aimOrigin = new Vector3();
 const aimDirection = new Vector3(0, 0, -1);
+const up = new Vector3(0, 1, 0);
+
+const YAW_LIMIT = 2.35;
+const PITCH_LIMIT = 0.42;
+const PANEL_LAYOUT = 1120;
 
 export async function startStage(host: HTMLElement, options: StageOptions): Promise<StageHandle> {
   const desktop = options.tier === "high";
   const renderer = new WebGLRenderer({
-    antialias: desktop,
+    antialias: true,
     alpha: false,
     powerPreference: "high-performance",
     stencil: false,
@@ -96,10 +140,11 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   renderer.toneMapping = AgXToneMapping;
   renderer.toneMappingExposure = 0.9;
   renderer.setClearColor(0x07060c, 1);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, desktop ? 1.5 : 1));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, desktop ? 2 : 1.5));
   renderer.xr.enabled = true;
   renderer.xr.setReferenceSpaceType("local-floor");
   renderer.xr.setFoveation(1);
+  const maxAniso = renderer.capabilities.getMaxAnisotropy();
 
   const canvas = renderer.domElement;
   canvas.className = "forge-canvas";
@@ -111,42 +156,60 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   scene.add(new HemisphereLight(0x9eb0c8, 0x1a120e, 0.45));
   scene.add(new AmbientLight(0xffffff, 0.15));
 
-  const platform = new Mesh(
-    new CylinderGeometry(8.2, 8.8, 0.45, 48),
-    new MeshStandardMaterial({ color: 0x141820, metalness: 0.55, roughness: 0.42 }),
-  );
-  platform.position.y = -0.28;
-  scene.add(platform);
-
-  const camera = new PerspectiveCamera(54, 1, 0.1, 400);
-  const lookAt = new Vector3(0, 5, 0);
-  const home = new Vector3(8, 11, 44);
-  camera.position.copy(home);
-  camera.lookAt(lookAt);
-
-  const controls = desktop
-    ? null
-    : new OrbitControls(camera, canvas);
-  if (controls) {
-    controls.target.copy(lookAt);
-    controls.enablePan = false;
-    controls.enableZoom = false;
-    controls.rotateSpeed = 0.45;
-    controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI * 0.48;
-    controls.minPolarAngle = 0.35;
-  }
+  const camera = new PerspectiveCamera(60, 1, 0.08, 400);
+  const rig = new PerspectiveCamera();
+  const stancePos = new Vector3();
+  const stanceQuat = new Quaternion();
+  const lookEuler = new Euler(0, 0, 0, "YXZ");
+  const yawQuat = new Quaternion();
+  const pitchQuat = new Quaternion();
+  const flightFromPos = new Vector3();
+  const flightToPos = new Vector3();
+  const flightFromQuat = new Quaternion();
+  const flightToQuat = new Quaternion();
+  const camRight = new Vector3();
+  const projectCenter = new Vector3();
+  const projectEdge = new Vector3();
+  let yaw = 0;
+  let pitch = 0;
+  let yawTarget = 0;
+  let pitchTarget = 0;
+  let flying = false;
+  let flightT = 1;
+  let flightDuration = 2.1;
+  let currentId = "plaza";
+  let readingMode = options.initialReading === true;
+  let presentation: StagePresentation = "world";
+  let panelSide = 0.9;
+  let panelDistance = 2.25;
+  let dragging = false;
+  let dragId = -1;
+  let dragX = 0;
+  let dragY = 0;
+  let dragDistance = 0;
+  let overCanvas = false;
+  let edgeX = 0;
+  let edgeY = 0;
+  let motionEnabled = false;
 
   let composer: EffectComposer | null = null;
+  let bloom: UnrealBloomPass | null = null;
+  const samples = Math.min(4, renderer.capabilities.maxSamples || 0);
   if (desktop) {
     composer = new EffectComposer(renderer);
+    composer.setPixelRatio(renderer.getPixelRatio());
+    composer.renderTarget1.samples = samples;
+    composer.renderTarget2.samples = samples;
     composer.addPass(new RenderPass(scene, camera));
-    const bloom = new UnrealBloomPass(new Vector2(canvas.width, canvas.height), 0.2, 0.16, 0.94);
+    bloom = new UnrealBloomPass(new Vector2(1, 1), 0.18, 0.18, 0.94);
     composer.addPass(bloom);
     composer.addPass(new OutputPass());
+    composer.addPass(new FXAAPass());
   }
+  host.dataset.aa = desktop ? `msaa${samples}+fxaa` : "msaa";
 
   resize();
+  goTo(options.initialStance || "plaza", { fly: false, reading: readingMode });
 
   const fadeMaterial = new MeshBasicMaterial({
     color: 0x000000,
@@ -191,8 +254,18 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   scene.add(marker);
 
   const panel = makePanel();
+  panel.root.userData.noGround = true;
   panel.root.visible = false;
   scene.add(panel.root);
+  fadeMesh.userData.noGround = true;
+  marker.userData.noGround = true;
+
+  const glassSlots = makeGlass(scene, options.panels ?? [], options.tier === "high");
+  const edgeMaterials = new Set<MeshStandardMaterial>();
+  const bridgeTemplates = new Map<string, Group>();
+  const crystalTemplates = new Map<string, Group>();
+  const islandGroups: Group[] = [];
+  let bridgesPlaced = false;
 
   try {
     renderer.render(scene, camera);
@@ -220,13 +293,15 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   void hdrLoader.loadAsync(options.assets.env).then((hdr) => {
     if (disposed) return;
     hdr.mapping = EquirectangularReflectionMapping;
+    hdr.anisotropy = maxAniso;
     scene.environment = hdr;
   }).catch(() => undefined);
 
   void loader.loadAsync(options.assets.forge).then((gltf) => {
     if (disposed) return;
     const forge = gltf.scene;
-    tuneMaterials(forge, options.tier);
+    tuneMaterials(forge, options.tier, "");
+    sharpenTextures(forge, maxAniso);
     collectForge(forge);
     energy.push(...emissiveMaterials(forge));
     scene.add(forge);
@@ -237,7 +312,8 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
 
   void loader.loadAsync(options.assets.island).then((gltf) => {
     if (disposed) return;
-    tuneMaterials(gltf.scene, options.tier);
+    tuneMaterials(gltf.scene, options.tier, "");
+    sharpenTextures(gltf.scene, maxAniso);
     islandTemplate = gltf.scene;
     assemble();
   }).catch(() => undefined);
@@ -246,9 +322,30 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     void loader.loadAsync(spec.file).then((gltf) => {
       if (disposed) return;
       tuneMaterials(gltf.scene, options.tier, spec.nodePrefix);
+      sharpenTextures(gltf.scene, maxAniso);
       gltf.scene.userData.spec = spec;
       loadedPortals.set(spec.id, gltf.scene);
       assemble();
+    }).catch(() => undefined);
+  }
+
+  for (const piece of options.assets.bridges ?? []) {
+    void loader.loadAsync(piece.file).then((gltf) => {
+      if (disposed) return;
+      tuneMaterials(gltf.scene, options.tier, "");
+      sharpenTextures(gltf.scene, maxAniso);
+      bridgeTemplates.set(piece.id, gltf.scene);
+      placeBridges();
+    }).catch(() => undefined);
+  }
+
+  for (const piece of options.assets.crystals ?? []) {
+    void loader.loadAsync(piece.file).then((gltf) => {
+      if (disposed) return;
+      tuneMaterials(gltf.scene, options.tier, "");
+      sharpenTextures(gltf.scene, maxAniso);
+      crystalTemplates.set(piece.id, gltf.scene);
+      dressCrystals();
     }).catch(() => undefined);
   }
 
@@ -297,17 +394,50 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   };
   canvas.addEventListener("webglcontextlost", onLost);
   canvas.addEventListener("webglcontextrestored", onRestored);
-  const onPointer = (event: PointerEvent) => {
-    pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -((event.clientY / window.innerHeight) * 2 - 1);
+  const onPointerDown = (event: PointerEvent) => {
+    if (event.button !== 0 || renderer.xr.isPresenting) return;
+    dragging = true;
+    dragId = event.pointerId;
+    dragX = event.clientX;
+    dragY = event.clientY;
+    dragDistance = 0;
+    canvas.setPointerCapture(event.pointerId);
   };
-  window.addEventListener("pointermove", onPointer);
-  const onClick = (event: PointerEvent) => {
-    if (renderer.xr.isPresenting) return;
-    const spec = specFromPointer(event);
-    if (spec) window.location.assign(spec.href);
+  const onPointerMove = (event: PointerEvent) => {
+    const bounds = canvas.getBoundingClientRect();
+    edgeX = ((event.clientX - bounds.left) / Math.max(1, bounds.width)) * 2 - 1;
+    edgeY = -(((event.clientY - bounds.top) / Math.max(1, bounds.height)) * 2 - 1);
+    overCanvas = true;
+    if (!dragging || event.pointerId !== dragId) return;
+    const dx = event.clientX - dragX;
+    const dy = event.clientY - dragY;
+    dragX = event.clientX;
+    dragY = event.clientY;
+    dragDistance += Math.abs(dx) + Math.abs(dy);
+    if (presentation === "list") return;
+    yawTarget = clamp(yawTarget - dx * 0.0032, -YAW_LIMIT, YAW_LIMIT);
+    pitchTarget = clamp(pitchTarget + dy * 0.0022, -PITCH_LIMIT, PITCH_LIMIT);
   };
-  canvas.addEventListener("click", onClick);
+  const onPointerUp = (event: PointerEvent) => {
+    if (event.pointerId !== dragId) return;
+    dragging = false;
+    dragId = -1;
+    if (dragDistance < 8 && !renderer.xr.isPresenting) {
+      const spec = specFromPointer(event);
+      if (spec) {
+        if (options.onNavigate) options.onNavigate(spec.href);
+        else window.location.assign(spec.href);
+      }
+    }
+  };
+  const onPointerLeave = () => {
+    overCanvas = false;
+  };
+  canvas.addEventListener("pointerdown", onPointerDown);
+  canvas.addEventListener("pointermove", onPointerMove);
+  canvas.addEventListener("pointerup", onPointerUp);
+  canvas.addEventListener("pointercancel", onPointerUp);
+  canvas.addEventListener("pointerleave", onPointerLeave);
 
   renderer.setAnimationLoop(() => {
     if (disposed || lost || hidden || !onscreen) return;
@@ -318,14 +448,12 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     fade += (fadeTarget - fade) * Math.min(1, dt * 14);
     fadeMaterial.opacity = fade;
     animate(now, dt);
-    if (!presenting) {
-      if (desktop) driftCamera(now);
-      controls?.update();
-      hoverFromCamera();
-    } else {
+    if (!presenting) updateLook(dt);
+    else {
       updateHands();
       updateTeleport();
     }
+    syncGlass();
     for (const sprite of halos) sprite.visible = presenting;
     if (presenting || !composer) renderer.render(scene, camera);
     else composer.render();
@@ -355,7 +483,9 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       portal.userData.spec = spec;
       collectPortal(portal, spec);
       island.add(portal);
+      island.userData.index = index;
       scene.add(island);
+      islandGroups.push(island);
       portalRoots.push(portal);
       const halo = new Sprite(new SpriteMaterial({
         color: spec.color,
@@ -370,6 +500,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       portal.add(halo);
       halos.push(halo);
     }
+    dressCrystals();
   }
 
   function animate(time: number, dt: number) {
@@ -385,21 +516,211 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       const base = material.userData.baseIntensity as number;
       material.emissiveIntensity = base * pulse;
     }
+    const edgePulse = 0.72 + Math.sin(time * 1.45) * 0.28;
+    for (const material of edgeMaterials) {
+      const base = (material.userData.baseIntensity as number) || 1;
+      material.emissiveIntensity = base * edgePulse;
+      if (material.emissiveMap) material.emissiveMap.offset.y = (time * 0.12) % 1;
+    }
   }
 
-  function driftCamera(time: number) {
-    camera.position.set(
-      home.x + pointer.x * 1.8,
-      home.y + pointer.y * 0.8 + Math.sin(time * 0.35) * 0.35,
-      home.z + Math.sin(time * 0.18) * 1.2,
-    );
-    camera.lookAt(lookAt);
+  function placeBridges() {
+    if (bridgesPlaced) return;
+    for (const piece of options.assets.bridges ?? []) {
+      if (!bridgeTemplates.has(piece.id)) return;
+    }
+    if (!options.assets.bridges?.length) return;
+    bridgesPlaced = true;
+    for (let index = 0; index < options.assets.portals.length; index += 1) {
+      for (const placed of bridgeRun(index)) {
+        const template = bridgeTemplates.get(placed.id);
+        if (!template) continue;
+        const node = template.clone(true);
+        node.position.set(placed.pose.x, placed.pose.y, placed.pose.z);
+        node.rotation.y = placed.pose.yaw;
+        scene.add(node);
+        dressBridge(node);
+      }
+    }
   }
 
-  function hoverFromCamera() {
-    raycaster.setFromCamera(pointer, camera);
-    const hit = firstSpec(raycaster.intersectObjects(selectables, true));
-    showPanel(hit);
+  function dressBridge(root: Object3D) {
+    root.traverse((node) => {
+      if (node.name.endsWith("_Pylons")) bobs.push({ node, baseY: node.position.y, phase: bobs.length });
+      if (!node.name.endsWith("_EdgeLight")) return;
+      const mesh = node as Mesh;
+      const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      for (const material of list) {
+        const named = material as MeshStandardMaterial | undefined;
+        if (!named) continue;
+        if (named.userData.baseIntensity === undefined) named.userData.baseIntensity = named.emissiveIntensity || 1;
+        const map = named.emissiveMap;
+        if (map) {
+          map.wrapS = RepeatWrapping;
+          map.wrapT = RepeatWrapping;
+          map.needsUpdate = true;
+        }
+        edgeMaterials.add(named);
+      }
+    });
+    energy.push(...emissiveMaterials(root));
+  }
+
+  function dressCrystals() {
+    for (const island of islandGroups) {
+      if (island.userData.dressed) continue;
+      const index = island.userData.index as number;
+      const spots = crystalSpots(index);
+      if (spots.some((spot) => !crystalTemplates.has(spot.id))) continue;
+      for (const spot of spots) {
+        const template = crystalTemplates.get(spot.id);
+        if (!template) continue;
+        const cluster = template.clone(true);
+        cluster.position.set(spot.x, spot.y, spot.z);
+        cluster.rotation.y = spot.yaw;
+        island.add(cluster);
+        const cores = cluster.getObjectByName(`${spot.id}_Cores`);
+        if (cores) energy.push(...emissiveMaterials(cores));
+      }
+      island.userData.dressed = true;
+    }
+  }
+
+  function motionReduced() {
+    return options.reducedMotion === true || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  function goTo(id: string, next?: { fly?: boolean; reading?: boolean }) {
+    const stance = stanceFor(id) ?? plazaStance();
+    currentId = stance.id;
+    if (next && "reading" in next && next.reading !== undefined) readingMode = next.reading;
+    host.dataset.stance = currentId;
+    host.dataset.reading = readingMode ? "true" : "false";
+    rig.position.set(stance.position.x, stance.position.y, stance.position.z);
+    rig.lookAt(stance.look.x, stance.look.y, stance.look.z);
+    stancePos.copy(rig.position);
+    stanceQuat.copy(rig.quaternion);
+    const distance = camera.position.distanceTo(stancePos);
+    const travel = next?.fly !== false && !motionReduced() && distance > 0.4;
+    yawTarget = 0;
+    pitchTarget = 0;
+    if (!travel) {
+      flying = false;
+      flightT = 1;
+      yaw = 0;
+      pitch = 0;
+      applyLook();
+      host.dataset.flying = "false";
+      return;
+    }
+    flightFromPos.copy(camera.position);
+    flightFromQuat.copy(camera.quaternion);
+    flightToPos.copy(stancePos);
+    flightToQuat.copy(stanceQuat);
+    flightT = 0;
+    flightDuration = Math.min(2.5, Math.max(1.5, 1.15 + distance / 36));
+    flying = true;
+    host.dataset.flying = "true";
+  }
+
+  function applyLook() {
+    yawQuat.setFromAxisAngle(up, yaw);
+    lookEuler.set(pitch, 0, 0);
+    pitchQuat.setFromEuler(lookEuler);
+    camera.position.copy(stancePos);
+    camera.quaternion.copy(yawQuat).multiply(stanceQuat).multiply(pitchQuat);
+  }
+
+  function updateLook(dt: number) {
+    if (flying) {
+      flightT += dt / flightDuration;
+      const blend = smoothstep(Math.min(1, flightT));
+      camera.position.lerpVectors(flightFromPos, flightToPos, blend);
+      camera.quaternion.slerpQuaternions(flightFromQuat, flightToQuat, blend);
+      if (flightT >= 1) {
+        flying = false;
+        yaw = 0;
+        pitch = 0;
+        yawTarget = 0;
+        pitchTarget = 0;
+        applyLook();
+        host.dataset.flying = "false";
+      }
+      return;
+    }
+    if (desktop && overCanvas && !dragging && presentation === "world") {
+      if (edgeX > 0.84) yawTarget = clamp(yawTarget - dt * 0.38, -YAW_LIMIT, YAW_LIMIT);
+      if (edgeX < -0.84) yawTarget = clamp(yawTarget + dt * 0.38, -YAW_LIMIT, YAW_LIMIT);
+      if (edgeY > 0.84) pitchTarget = clamp(pitchTarget - dt * 0.26, -PITCH_LIMIT, PITCH_LIMIT);
+      if (edgeY < -0.84) pitchTarget = clamp(pitchTarget + dt * 0.26, -PITCH_LIMIT, PITCH_LIMIT);
+    }
+    const blend = 1 - Math.exp(-8 * dt);
+    yaw += (yawTarget - yaw) * blend;
+    pitch += (pitchTarget - pitch) * blend;
+    applyLook();
+  }
+
+  function syncGlass() {
+    const stance = stanceFor(currentId) ?? plazaStance();
+    const reading = readingMode && currentId !== "plaza";
+    const sideTarget = reading ? 0 : currentId === "plaza" ? 1.05 : 0.92;
+    const distanceTarget = reading ? 1.72 : 2.28;
+    const blend = 1 - Math.exp(-4 * 0.016);
+    panelSide += (sideTarget - panelSide) * blend;
+    panelDistance += (distanceTarget - panelDistance) * blend;
+    const project = presentation === "world" && !presenting;
+    for (const slot of glassSlots) {
+      const slotStance = stanceFor(slot.id) ?? plazaStance();
+      const active = slot.id === currentId;
+      const anchor = panelAnchor(active ? stance : slotStance, active ? panelDistance : 2.3, active ? panelSide : 0);
+      const metersWide = active ? (reading ? 1.9 : 1.62) : 2.05;
+      const metersTall = active && reading ? 1.7 : 1.18;
+      slot.root.position.set(anchor.x, anchor.y, anchor.z);
+      slot.root.scale.set(metersWide / 2.36, metersTall / 1.46, 1);
+      if (!presenting) slot.root.quaternion.copy(camera.quaternion);
+      slot.label.visible = presenting;
+      if (!slot.element) continue;
+      if (!project) {
+        if (presentation === "dock" && slot.id === currentId) {
+          slot.element.style.transform = "";
+          slot.element.style.visibility = "visible";
+          slot.element.style.opacity = "1";
+          slot.element.style.pointerEvents = "auto";
+        } else {
+          slot.element.style.visibility = "hidden";
+          slot.element.style.pointerEvents = "none";
+        }
+        continue;
+      }
+      projectPanel(slot, anchor, metersWide, active);
+    }
+  }
+
+  function projectPanel(slot: GlassSlot, anchor: Vector3, metersWide: number, active: boolean) {
+    const element = slot.element;
+    if (!element) return;
+    projectCenter.copy(anchor).project(camera);
+    if (projectCenter.z < -1 || projectCenter.z > 1) {
+      element.style.visibility = "hidden";
+      return;
+    }
+    camRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+    projectEdge.copy(anchor).addScaledVector(camRight, metersWide / 2).project(camera);
+    const width = host.clientWidth || window.innerWidth;
+    const height = host.clientHeight || window.innerHeight;
+    const cx = (projectCenter.x * 0.5 + 0.5) * width;
+    const cy = (-projectCenter.y * 0.5 + 0.5) * height;
+    const ex = (projectEdge.x * 0.5 + 0.5) * width;
+    const scale = (Math.abs(ex - cx) * 2) / PANEL_LAYOUT;
+    if (!active && scale < 0.36) {
+      element.style.visibility = "hidden";
+      element.style.pointerEvents = "none";
+      return;
+    }
+    element.style.visibility = "visible";
+    element.style.pointerEvents = active ? "auto" : "none";
+    element.style.opacity = active ? "1" : String(Math.max(0.35, Math.min(1, scale * 1.4)));
+    element.style.transform = `translate(-50%, -50%) translate(${cx}px, ${cy}px) scale(${Math.max(0.18, scale)})`;
   }
 
   function specFromPointer(event: PointerEvent): PortalSpec | null {
@@ -454,7 +775,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     if (pushed && aimer) {
       aimRay(aimer);
       const floors = scene.children.filter((child) => child !== marker && child !== panel.root);
-      const hits = raycaster.intersectObjects(floors, true).filter((hit) => !hasSpec(hit.object));
+      const hits = raycaster.intersectObjects(floors, true).filter((hit) => !blocked(hit.object));
       const ground = hits[0];
       if (ground) {
         teleportPoint = ground.point.clone();
@@ -549,7 +870,13 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     camera.aspect = width / Math.max(1, height);
     camera.updateProjectionMatrix();
     renderer.setSize(width, height, false);
-    composer?.setSize(width, height);
+    if (!composer || !bloom) return;
+    const ratio = renderer.getPixelRatio();
+    composer.setPixelRatio(ratio);
+    composer.setSize(width, height);
+    // UnrealBloomPass halves whatever size it is given. Pass twice the
+    // drawing buffer so the bright pass stays at full resolution.
+    bloom.setSize(Math.max(2, width * ratio * 2), Math.max(2, height * ratio * 2));
   }
 
   function dispose() {
@@ -558,13 +885,16 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     renderer.setAnimationLoop(null);
     document.removeEventListener("visibilitychange", onVisibility);
     window.removeEventListener("resize", onResize);
-    window.removeEventListener("pointermove", onPointer);
-    canvas.removeEventListener("click", onClick);
+    window.removeEventListener("deviceorientation", onOrientation);
+    canvas.removeEventListener("pointerdown", onPointerDown);
+    canvas.removeEventListener("pointermove", onPointerMove);
+    canvas.removeEventListener("pointerup", onPointerUp);
+    canvas.removeEventListener("pointercancel", onPointerUp);
+    canvas.removeEventListener("pointerleave", onPointerLeave);
     canvas.removeEventListener("webglcontextlost", onLost);
     canvas.removeEventListener("webglcontextrestored", onRestored);
     observer.disconnect();
     resizeObserver.disconnect();
-    controls?.dispose();
     draco.dispose();
     ktx2.dispose();
     composer?.dispose();
@@ -572,9 +902,35 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     canvas.remove();
     host.dataset.ready = "false";
     host.dataset.quality = "quiet";
+    host.dataset.flying = "false";
   }
 
-  return { dispose, enterVR };
+  function setPresentation(mode: StagePresentation) {
+    presentation = mode;
+    host.dataset.presentation = mode;
+  }
+
+  async function enableMotion() {
+    const orientation = DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
+    if (typeof orientation.requestPermission === "function") {
+      const result = await orientation.requestPermission();
+      if (result !== "granted") return false;
+    }
+    if (motionEnabled) return true;
+    motionEnabled = true;
+    window.addEventListener("deviceorientation", onOrientation);
+    return true;
+  }
+
+  function onOrientation(event: DeviceOrientationEvent) {
+    if (dragging || flying || presentation !== "world") return;
+    const gamma = event.gamma ?? 0;
+    const beta = event.beta ?? 70;
+    yawTarget = clamp((-gamma / 38) * YAW_LIMIT, -YAW_LIMIT, YAW_LIMIT);
+    pitchTarget = clamp(((beta - 68) / 32) * PITCH_LIMIT, -PITCH_LIMIT, PITCH_LIMIT);
+  }
+
+  return { dispose, enterVR, goTo, setPresentation, enableMotion };
 
   function collectForge(forge: Object3D) {
     forge.traverse((node) => {
@@ -595,7 +951,10 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     selectables.push(portal);
     const prefix = spec.nodePrefix;
     portal.traverse((node) => {
-      if (node.name.includes("_Ring_")) rings.push(node);
+      if (node.name.includes("_Ring_")) {
+        node.scale.multiplyScalar(1.08);
+        rings.push(node);
+      }
       if (node.name === `${prefix}_Symbol` || node.name === `${prefix}_Symbol_Cage` || node.name === `${prefix}_Symbol_Core`) {
         bobs.push({ node, baseY: node.position.y, phase: spec.id.length });
       }
@@ -691,6 +1050,125 @@ function wrapText(context: CanvasRenderingContext2D, text: string, x: number, y:
   context.fillText(row, x, y);
 }
 
+interface GlassSlot {
+  id: string;
+  element: HTMLElement | null;
+  root: Group;
+  label: Mesh;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value));
+}
+
+function blocked(object: Object3D): boolean {
+  let node: Object3D | null = object;
+  while (node) {
+    if (node.userData.spec || node.userData.noGround) return true;
+    node = node.parent;
+  }
+  return false;
+}
+
+const GLASS_TINT: Record<string, number> = {
+  plaza: 0x9fd8ff,
+  projects: 0x3d7eff,
+  journal: 0x9b87ff,
+  workshop: 0xff8a3d,
+};
+
+function makeGlass(scene: Scene, panels: GlassPanel[], transmission: boolean): GlassSlot[] {
+  return ["plaza", "projects", "journal", "workshop"].map((id) => {
+    const element = panels.find((panel) => panel.id === id)?.element ?? null;
+    const tint = GLASS_TINT[id] ?? 0xffffff;
+    const glass = new MeshPhysicalMaterial({
+      color: 0x10141c,
+      metalness: 0.04,
+      roughness: 0.16,
+      transmission: transmission ? 0.72 : 0,
+      thickness: 0.18,
+      transparent: true,
+      opacity: transmission ? 0.42 : 0.5,
+      envMapIntensity: 1.15,
+      clearcoat: 0.55,
+      clearcoatRoughness: 0.22,
+      side: DoubleSide,
+      depthWrite: false,
+    });
+    const root = new Group();
+    root.userData.noGround = true;
+    const slab = new Mesh(new BoxGeometry(2.36, 1.46, 0.055), glass);
+    const rim = new Mesh(
+      new BoxGeometry(2.48, 1.58, 0.04),
+      new MeshBasicMaterial({ color: tint, transparent: true, opacity: 0.28, depthWrite: false }),
+    );
+    const label = makeLabel(id);
+    label.position.z = 0.05;
+    label.visible = false;
+    slab.userData.noGround = true;
+    rim.userData.noGround = true;
+    label.userData.noGround = true;
+    root.add(slab, rim, label);
+    scene.add(root);
+    return { id, element, root, label };
+  });
+}
+
+function makeLabel(id: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 640;
+  const context = canvas.getContext("2d");
+  const titles: Record<string, string> = {
+    plaza: "The Forge",
+    projects: "Projects",
+    journal: "Journal",
+    workshop: "Workshop",
+  };
+  const lines: Record<string, string> = {
+    plaza: "Standing on the plaza.",
+    projects: "Software and games.",
+    journal: "Articles and videos.",
+    workshop: "Minnsace Inc.",
+  };
+  if (context) {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = "#f4f0e6";
+    context.font = "600 84px sans-serif";
+    context.fillText(titles[id] ?? id, 72, 200);
+    context.fillStyle = "#c3bdb2";
+    context.font = "40px sans-serif";
+    context.fillText(lines[id] ?? "", 72, 280);
+  }
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return new Mesh(
+    new PlaneGeometry(2.2, 1.32),
+    new MeshBasicMaterial({ map: texture, transparent: true, depthWrite: false }),
+  );
+}
+
+function sharpenTextures(root: Object3D, anisotropy: number) {
+  const keys = ["map", "normalMap", "roughnessMap", "metalnessMap", "emissiveMap", "aoMap"] as const;
+  root.traverse((node) => {
+    const mesh = node as Mesh;
+    if (!mesh.isMesh || !mesh.material) return;
+    const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+    for (const material of list) {
+      if (!material) continue;
+      const named = material as MeshStandardMaterial;
+      for (const key of keys) {
+        const texture = named[key];
+        if (!texture) continue;
+        texture.anisotropy = anisotropy;
+        texture.generateMipmaps = true;
+        texture.minFilter = LinearMipmapLinearFilter;
+        texture.needsUpdate = true;
+      }
+    }
+  });
+}
+
 function firstSpec(hits: { object: Object3D }[]): PortalSpec | null {
   for (const hit of hits) {
     let node: Object3D | null = hit.object;
@@ -701,15 +1179,6 @@ function firstSpec(hits: { object: Object3D }[]): PortalSpec | null {
     }
   }
   return null;
-}
-
-function hasSpec(object: Object3D): boolean {
-  let node: Object3D | null = object;
-  while (node) {
-    if (node.userData.spec) return true;
-    node = node.parent;
-  }
-  return false;
 }
 
 function rayLine() {

@@ -1,12 +1,18 @@
 import {
+  BRIDGE_IDS,
+  CRYSTAL_IDS,
   FORGE_STAGE_ID,
+  isReadingPath,
+  kitFile,
   readForgeChoice,
   resolveQuality,
   shouldStartForge,
+  stanceIdFromPath,
   writeForgeChoice,
 } from "@digital-forge/runtime";
 import type { StageHandle } from "@digital-forge/runtime/stage";
 import { brand } from "../brand/manifest";
+import { createWorld } from "./world";
 
 const portals = [
   {
@@ -22,7 +28,7 @@ const portals = [
     id: "journal",
     nodePrefix: "Portal_Knowledge",
     file: "/models/Portal_Knowledge_web.glb",
-    href: "/journal/i-bought-a-5-domain-on-impulse/",
+    href: "/journal/",
     title: "Journal",
     summary: "I Bought a $5 Domain on Impulse. Now It's a Game.",
     color: 0x9b87ff,
@@ -42,17 +48,23 @@ export function bootForge() {
   const host = document.getElementById(FORGE_STAGE_ID);
   if (!host) return;
 
+  const world = createWorld();
   const controls = document.createElement("div");
   controls.className = "forge-controls";
   const quietButton = document.createElement("button");
   quietButton.type = "button";
   quietButton.className = "forge-quiet";
+  const motionButton = document.createElement("button");
+  motionButton.type = "button";
+  motionButton.className = "forge-motion";
+  motionButton.textContent = "Look with motion";
+  motionButton.hidden = !window.matchMedia("(pointer: coarse)").matches;
   const vrButton = document.createElement("button");
   vrButton.type = "button";
   vrButton.className = "forge-vr";
   vrButton.textContent = "Enter VR";
   vrButton.hidden = true;
-  controls.append(quietButton, vrButton);
+  controls.append(quietButton, motionButton, vrButton);
   document.body.append(controls);
 
   let handle: StageHandle | null = null;
@@ -62,7 +74,9 @@ export function bootForge() {
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     saveData: (navigator as Navigator & { connection?: NetworkInformation }).connection?.saveData === true,
     webgl: probeWebGL(),
-    desktop: window.matchMedia("(min-width: 900px) and (pointer: fine)").matches,
+    desktop:
+      window.matchMedia("(min-width: 900px) and (pointer: fine)").matches ||
+      (window.matchMedia("(min-width: 1200px)").matches && !window.matchMedia("(pointer: coarse)").matches),
   });
 
   const refreshQuietLabel = () => {
@@ -77,22 +91,32 @@ export function bootForge() {
       return;
     }
     starting = true;
-    const tier = resolveQuality(current);
+    const headset = /Quest|OculusBrowser/i.test(navigator.userAgent);
+    const tier = resolveQuality({ ...current, xr: headset });
     if (tier === "quiet") {
       starting = false;
       return;
     }
     try {
       const stage = await import("@digital-forge/runtime/stage");
+      const quest = tier === "quest";
       handle = await stage.startStage(host, {
         tier,
+        reducedMotion: current.reducedMotion,
+        initialStance: stanceIdFromPath(window.location.pathname),
+        initialReading: isReadingPath(window.location.pathname),
+        panels: world.panels(),
+        onNavigate: (href) => world.open(href),
         assets: {
           forge: "/models/Forge_Asset01_web.glb",
           island: "/models/Island_01_web.glb",
           env: "/models/Forge_Env_Nebula.hdr",
           portals,
+          bridges: BRIDGE_IDS.map((id) => ({ id, file: kitFile(id, quest) })),
+          crystals: CRYSTAL_IDS.map((id) => ({ id, file: kitFile(id, quest) })),
         },
       });
+      world.attach(handle);
       host.dataset.quality = tier;
       void offerVR();
     } catch (error) {
@@ -108,8 +132,10 @@ export function bootForge() {
   quietButton.addEventListener("click", () => {
     if (handle) {
       writeForgeChoice(localStorage, "quiet");
+      world.detach();
       handle.dispose();
       handle = null;
+      motionButton.hidden = true;
       vrButton.hidden = true;
       host.dataset.quality = "quiet";
       refreshQuietLabel();
@@ -121,6 +147,12 @@ export function bootForge() {
 
   vrButton.addEventListener("click", () => {
     void handle?.enterVR();
+  });
+
+  motionButton.addEventListener("click", () => {
+    void handle?.enableMotion().then((ok) => {
+      if (ok) motionButton.hidden = true;
+    });
   });
 
   refreshQuietLabel();

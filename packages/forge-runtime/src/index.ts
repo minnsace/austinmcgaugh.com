@@ -155,6 +155,22 @@ export interface ForgeRuntime {
   setQuality(signals?: QualitySignals): QualityTier;
 }
 
+export {
+  BRIDGE_IDS,
+  CRYSTAL_IDS,
+  EYE_HEIGHT,
+  bridgeRun,
+  crystalSpots,
+  isReadingPath,
+  kitFile,
+  panelAnchor,
+  plazaStance,
+  portalStance,
+  stanceFor,
+  stanceIdFromPath,
+  smoothstep,
+} from "./layout.ts";
+
 export function createForgeRuntime(): ForgeRuntime {
   const renderer = createRenderer();
   const shots = createShotSequencer();
