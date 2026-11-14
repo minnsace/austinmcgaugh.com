@@ -1,14 +1,14 @@
 ---
 layout: default
 title: About
-description: About Austin McGaugh, XR engineer and founder of Minnsace Inc.
+description: About Austin McGaugh, software engineer, game developer, and founder of Minnsace Inc.
 permalink: /about/
 ---
 <section class="page-hero section-wrap about-hero">
   <div class="about-hero-copy">
     <p class="eyebrow">A bit about me / 03</p>
     <h1>Curious by nature.<br><span class="text-accent">Builder by choice.</span></h1>
-    <p class="page-intro">I’m Austin McGaugh, an XR engineer and founder of Minnsace Inc. I’m interested in making thoughtful things across immersive technology and the web.</p>
+    <p class="page-intro">I’m Austin McGaugh, a software engineer, game developer, and founder of Minnsace Inc. I’m interested in making thoughtful software and games for the web and beyond.</p>
   </div>
   <img class="about-portrait" src="{{ '/assets/images/austin-mcgaugh.png' | relative_url }}" alt="Portrait of Austin McGaugh">
 </section>
