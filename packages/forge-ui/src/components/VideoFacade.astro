@@ -1,0 +1,62 @@
+---
+import { resolveVideo } from "../video";
+
+interface Props {
+  url: string;
+  title: string;
+}
+
+const { url, title } = Astro.props;
+const video = resolveVideo(url);
+const embed = video.embed ? `${video.embed}${video.embed.includes("?") ? "&" : "?"}autoplay=1` : undefined;
+---
+
+<figure class="video-shell">
+  <a
+    class="video-facade"
+    href={video.href}
+    data-video-facade
+    data-embed={embed}
+    data-title={title}
+  >
+    {
+      video.poster && (
+        <img
+          src={video.poster}
+          alt=""
+          width="1280"
+          height="720"
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+        />
+      )
+    }
+    <span class="video-facade-label">Play video<span class="visually-hidden">: {title}</span></span>
+  </a>
+</figure>
+
+<script>
+  function arm(root: ParentNode = document) {
+    root.querySelectorAll<HTMLAnchorElement>("[data-video-facade]").forEach((link) => {
+      if (link.dataset.ready === "true") return;
+      link.dataset.ready = "true";
+      link.addEventListener("click", (event) => {
+        const embed = link.dataset.embed;
+        if (!embed) return;
+        event.preventDefault();
+        const frame = document.createElement("iframe");
+        frame.className = "video-frame";
+        frame.src = embed;
+        frame.title = link.dataset.title || "Video";
+        frame.allow =
+          "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+        frame.allowFullscreen = true;
+        frame.referrerPolicy = "strict-origin-when-cross-origin";
+        link.replaceWith(frame);
+      });
+    });
+  }
+
+  arm();
+</script>

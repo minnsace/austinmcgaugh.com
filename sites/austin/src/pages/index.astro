@@ -1,0 +1,44 @@
+---
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import PortalGrid from "@digital-forge/ui/PortalGrid.astro";
+import { brand } from "../brand/manifest";
+import LatestStrip from "../components/LatestStrip.astro";
+import { loadKnowledge, loadProjects, loadWorkshop } from "../lib/content";
+import Base from "../layouts/Base.astro";
+
+const posts = await loadKnowledge();
+const projects = await loadProjects();
+const updates = await loadWorkshop();
+const datedProjects = projects.filter((project) => project.data.date);
+const latestProject = datedProjects.sort((a, b) => b.data.date!.getTime() - a.data.date!.getTime())[0];
+
+const description =
+  "Austin McGaugh is a software engineer and game developer, and founder of Minnsace Inc. Projects include FreeSnakeGame.com.";
+---
+
+<Base description={description}>
+  <ContentPanel variant="hero">
+    <p class="kicker">Software engineer · Game developer</p>
+    <h1>I build software and <span class="accent">games.</span></h1>
+    <p class="lede">
+      I’m Austin McGaugh, founder of Minnsace Inc. I build software and games, including FreeSnakeGame.com.
+    </p>
+    <div class="hero-actions">
+      <a class="button" href="/projects/">See projects</a>
+      <a class="text-link" href="/about/">About Austin</a>
+    </div>
+  </ContentPanel>
+  <ContentPanel>
+    <h2>Latest</h2>
+    <LatestStrip
+      article={posts.find((post) => post.data.type === "article")}
+      video={posts.find((post) => post.data.type === "video")}
+      project={latestProject}
+      update={updates[0]}
+    />
+  </ContentPanel>
+  <ContentPanel>
+    <h2>Sections</h2>
+    <PortalGrid portals={brand.portals} />
+  </ContentPanel>
+</Base>

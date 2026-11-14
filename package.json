@@ -1,0 +1,19 @@
+{
+  "name": "digital-forge",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "sites/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @digital-forge/austin",
+    "build": "npm run build -w @digital-forge/austin",
+    "preview": "npm run preview -w @digital-forge/austin",
+    "check": "npm run check -w @digital-forge/austin",
+    "test": "npm run test -w @digital-forge/runtime && npm run test -w @digital-forge/ui && npm run build && node sites/austin/scripts/verify-build.mjs"
+  }
+}

@@ -1,0 +1,23 @@
+---
+import Symbol from "@digital-forge/ui/Symbol.astro";
+import type { AccentName, SymbolName } from "@digital-forge/ui/types";
+
+interface Props {
+  kicker: string;
+  title: string;
+  intro?: string;
+  symbol?: SymbolName;
+  tone?: AccentName;
+}
+
+const { kicker, title, intro, symbol, tone } = Astro.props;
+---
+
+<header class="page-header" style={tone ? `--mark: var(--color-${tone})` : undefined}>
+  <p class="kicker">
+    {symbol && <Symbol name={symbol} />}
+    <span>{kicker}</span>
+  </p>
+  <h1>{title}</h1>
+  {intro && <p class="lede">{intro}</p>}
+</header>

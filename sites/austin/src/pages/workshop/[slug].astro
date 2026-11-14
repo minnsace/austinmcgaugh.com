@@ -1,0 +1,35 @@
+---
+import { getEntry, render } from "astro:content";
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import DraftBanner from "../../components/DraftBanner.astro";
+import { formatDate, loadWorkshop } from "../../lib/content";
+import Base from "../../layouts/Base.astro";
+
+export async function getStaticPaths() {
+  const updates = await loadWorkshop();
+  return updates.map((update) => ({ params: { slug: update.id } }));
+}
+
+const { slug } = Astro.params;
+const update = slug ? await getEntry("workshop", slug) : undefined;
+if (!update || (update.data.draft && import.meta.env.PROD)) {
+  throw new Error(`Missing workshop update: ${slug}`);
+}
+
+const { Content } = await render(update);
+---
+
+<Base title={update.data.title} description={update.data.description} current="workshop" ogType="article" published={update.data.date}>
+  <ContentPanel>
+    {update.data.draft && <DraftBanner />}
+    <a class="back-link" href="/workshop/">Workshop</a>
+    <p class="kicker" style="--mark: var(--color-amber)">Progress note</p>
+    <h1>{update.data.title}</h1>
+    <div class="post-meta">
+      <time datetime={update.data.date.toISOString()}>{formatDate(update.data.date)}</time>
+    </div>
+    <div class="prose">
+      <Content />
+    </div>
+  </ContentPanel>
+</Base>

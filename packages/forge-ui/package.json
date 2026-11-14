@@ -1,0 +1,25 @@
+{
+  "name": "@digital-forge/ui",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared HTML for the Digital Forge: skip link, navigation, panels, symbols, and the video facade.",
+  "exports": {
+    "./styles.css": "./src/styles/forge.css",
+    "./types": "./src/types.ts",
+    "./video": "./src/video.ts",
+    "./SkipLink.astro": "./src/components/SkipLink.astro",
+    "./SiteHeader.astro": "./src/components/SiteHeader.astro",
+    "./SiteFooter.astro": "./src/components/SiteFooter.astro",
+    "./ContentPanel.astro": "./src/components/ContentPanel.astro",
+    "./Symbol.astro": "./src/components/Symbol.astro",
+    "./PortalGrid.astro": "./src/components/PortalGrid.astro",
+    "./VideoFacade.astro": "./src/components/VideoFacade.astro"
+  },
+  "peerDependencies": {
+    "astro": "^5"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  }
+}

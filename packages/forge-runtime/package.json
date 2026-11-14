@@ -1,0 +1,13 @@
+{
+  "name": "@digital-forge/runtime",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Digital Forge runtime. Phase 1 is a stub: quality switch, shot sequencer, and a renderer mount. Three.js arrives in phase 2.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  }
+}

@@ -1,0 +1,61 @@
+---
+import { Picture } from "astro:assets";
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import portrait from "../assets/austin-mcgaugh.png";
+import { brand } from "../brand/manifest";
+import Base from "../layouts/Base.astro";
+
+const description = "About Austin McGaugh, software engineer, game developer, and founder of Minnsace Inc.";
+---
+
+<Base title="About" description={description}>
+  <ContentPanel variant="hero">
+    <div class="about-hero">
+      <div>
+        <p class="kicker">About</p>
+        <h1>Austin McGaugh</h1>
+        <p class="lede">{brand.tagline}</p>
+      </div>
+      <Picture
+        src={portrait}
+        alt="Portrait of Austin McGaugh"
+        widths={[480, 800, 1254]}
+        sizes="(min-width: 800px) 360px, 80vw"
+        formats={["avif", "webp"]}
+        fallbackFormat="webp"
+        quality={68}
+        class="portrait"
+        pictureAttributes={{ class: "portrait" }}
+        loading="eager"
+      />
+    </div>
+  </ContentPanel>
+  <ContentPanel>
+    <div class="prose">
+      <h2>Minnsace Inc.</h2>
+      <p>Minnsace Inc. is my company. I build software and games.</p>
+      <p>
+        FreeSnakeGame.com is one of my projects. Games are listed on the <a href="/projects/">Projects</a> page, and the studio lives in the
+        <a href="/workshop/">Workshop</a>.
+      </p>
+      <h2 id="contact">Contact</h2>
+      <p>Email me about software engineering, game development, or other work.</p>
+      <p><a class="email-link" href={`mailto:${brand.email}`}>{brand.email}</a></p>
+      <h2>Profiles</h2>
+    </div>
+    <nav aria-label="Social profiles">
+      <ul class="social-list">
+        {
+          brand.socials.map((social) => (
+            <li>
+              <a href={social.href} rel="me noopener noreferrer" target="_blank">
+                {social.label}
+                <span class="visually-hidden"> (opens in a new tab)</span>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </nav>
+  </ContentPanel>
+</Base>
