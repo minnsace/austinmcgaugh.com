@@ -137,6 +137,7 @@ Fog is analytic, not a volume, so mobile can drop it. The composer is selective 
 - Brand-specific values stay in the manifest: colors, names, socials, portals, the studio record.
 - The panels are opaque. The poster shows in the margins and between panels. Phase 2 does not need a new layout to float those panels over a canvas.
 - The old copy, socials, email, and portrait stay. Project facts come from the Steam page, freesnakegame.com, and minnsace.com. Missing facts stay missing.
+- The only email on this site is contact@austinmcgaugh.com, including where the studio is mentioned. The personal LinkedIn is https://www.linkedin.com/in/austinmcgaugh/. A company LinkedIn URL is not linked until it can be verified.
 - `/writing/` and `/work/` redirect, rather than disappearing.
 - HTTPS enforcement is a GitHub Pages setting. The certificate is already there. Austin turns the setting on. The repository cannot.
 

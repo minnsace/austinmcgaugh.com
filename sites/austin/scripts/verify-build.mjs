@@ -71,6 +71,12 @@ for (const leftover of leftovers) {
 }
 
 check(existsSync(dist), "dist/ was not built");
+const builtHtml = existsSync(dist) ? walk(dist).filter((file) => file.endsWith(".html")) : [];
+for (const file of builtHtml) {
+  const html = readFileSync(file, "utf8");
+  check(!html.includes("hello@minnsace.com"), `${relative(dist, file)} still uses hello@minnsace.com`);
+  check(!html.includes("linkedin.com/company"), `${relative(dist, file)} links a company LinkedIn page`);
+}
 const files = existsSync(dist) ? walk(dist) : [];
 const htmlFiles = files.filter((file) => file.endsWith(".html")).map((file) => relative(dist, file));
 
@@ -166,8 +172,10 @@ check(deadlight.includes("VideoGame"), "Deadlight VideoGame JSON-LD");
 
 const snake = htmlFiles.includes("projects/free-snake-game/index.html") ? read("projects/free-snake-game/index.html") : "";
 check(snake.includes("https://freesnakegame.com/"), "FreeSnake URL");
-check(snake.includes("snake game for the web"), "FreeSnake description");
-check(!/power-ups|voice chat|battery level/i.test(snake), "FreeSnake page invented a feature");
+check(snake.includes("https://github.com/minnsace/free-snake-game"), "FreeSnake repo");
+check(snake.includes("pygame-ce") && snake.includes("WebAssembly") && snake.includes("scent markers"), "FreeSnake story");
+check(snake.includes("GitHub Copilot") && snake.includes("GoDaddy"), "FreeSnake origin");
+check(!/power-ups|voice chat|battery level|pygbag/i.test(snake), "FreeSnake page invented a feature");
 
 const knowledge = htmlFiles.includes("knowledge/index.html") ? read("knowledge/index.html") : "";
 check(knowledge.includes("No posts yet."), "Knowledge empty state");
@@ -175,7 +183,9 @@ check(knowledge.includes("No posts yet."), "Knowledge empty state");
 const workshop = htmlFiles.includes("workshop/index.html") ? read("workshop/index.html") : "";
 check(workshop.includes("Minnsace Inc. is my company."), "Workshop carries the studio sentence");
 check(workshop.includes("No progress notes yet."), "Workshop empty updates");
-check(workshop.includes("hello@minnsace.com"), "Workshop studio email");
+check(workshop.includes("contact@austinmcgaugh.com"), "Workshop uses the personal email");
+check(!workshop.includes("hello@minnsace.com"), "Workshop still mentions the old studio email");
+check(!workshop.includes("linkedin.com/company"), "Unverified company LinkedIn is linked");
 
 const about = htmlFiles.includes("about/index.html") ? read("about/index.html") : "";
 check(about.includes('alt="Portrait of Austin McGaugh"'), "Portrait alt text");

@@ -57,8 +57,7 @@ export const brand = {
   organization: {
     name: "Minnsace Inc.",
     url: "https://minnsace.com/",
-    email: "hello@minnsace.com",
-    sameAs: ["https://www.linkedin.com/company/minnsace"],
+    email: "contact@austinmcgaugh.com",
   },
 } satisfies Brand;
 

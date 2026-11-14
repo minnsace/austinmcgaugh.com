@@ -37,7 +37,6 @@ export function baseGraph(portraitUrl: string): Record<string, unknown>[] {
       url: brand.organization.url,
       email: brand.organization.email,
       founder: { "@id": personId },
-      sameAs: brand.organization.sameAs,
     },
   ];
 }
@@ -91,6 +90,7 @@ export function projectGraph(project: CollectionEntry<"projects">, canonical: st
       name: project.data.title,
       description: project.data.description,
       url: project.data.url,
+      sameAs: project.data.repository,
       datePublished: project.data.date ? project.data.date.toISOString().slice(0, 10) : undefined,
       operatingSystem: project.data.platform,
       author: { "@id": organizationId },

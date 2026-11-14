@@ -24,19 +24,8 @@ const description = "Minnsace Inc., the independent game studio founded by Austi
         <a href="/projects/free-snake-game/">FreeSnakeGame.com</a> is one of my projects.
       </p>
       <p>
-        Studio email: <a href={`mailto:${brand.organization.email}`}>{brand.organization.email}</a>.
-        For questions about software, games, or other work, email <a href={`mailto:${brand.email}`}>{brand.email}</a>.
+        Email me at <a href={`mailto:${brand.email}`}>{brand.email}</a> about the studio, a game, or other work.
       </p>
-      {
-        brand.organization.sameAs?.map((href) => (
-          <p>
-            <a href={href} rel="noopener noreferrer" target="_blank">
-              Minnsace on LinkedIn
-              <span class="visually-hidden"> (opens in a new tab)</span>
-            </a>
-          </p>
-        ))
-      }
     </div>
   </ContentPanel>
   <ContentPanel>
