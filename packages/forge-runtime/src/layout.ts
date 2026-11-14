@@ -180,10 +180,11 @@ export function kitFile(id: string, quest: boolean): string {
 }
 
 export function plazaStance(): Stance {
+  // Just off the dais on the open side, so the helix is the thing in front of you.
   return {
     id: "plaza",
-    position: { x: 0, y: FORGE_TREAD_Y + EYE_HEIGHT, z: -8.4 },
-    look: { x: 0, y: 2.6, z: -34 },
+    position: { x: 1.35, y: FORGE_TREAD_Y + EYE_HEIGHT, z: 7.6 },
+    look: { x: -0.2, y: 5.4, z: -4.5 },
   };
 }
 

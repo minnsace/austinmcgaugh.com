@@ -3,20 +3,18 @@ import {
   AgXToneMapping,
   AmbientLight,
   BackSide,
-  BoxGeometry,
   CanvasTexture,
   Color,
   CylinderGeometry,
-  DoubleSide,
   EquirectangularReflectionMapping,
   Euler,
+  FogExp2,
   Group,
   HemisphereLight,
   LinearMipmapLinearFilter,
   Matrix4,
   Mesh,
   MeshBasicMaterial,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   Object3D,
   PerspectiveCamera,
@@ -126,7 +124,7 @@ const up = new Vector3(0, 1, 0);
 
 const YAW_LIMIT = 2.35;
 const PITCH_LIMIT = 0.42;
-const PANEL_LAYOUT = 1120;
+const GLASS_CSS_WIDTH = 820;
 
 export async function startStage(host: HTMLElement, options: StageOptions): Promise<StageHandle> {
   const desktop = options.tier === "high";
@@ -152,9 +150,10 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   host.appendChild(canvas);
 
   const scene = new Scene();
-  scene.background = new Color(0x07060c);
-  scene.add(new HemisphereLight(0x9eb0c8, 0x1a120e, 0.45));
-  scene.add(new AmbientLight(0xffffff, 0.15));
+  scene.background = makeSky();
+  scene.fog = new FogExp2(0x160c22, 0.015);
+  scene.add(new HemisphereLight(0xb7c4de, 0x2a1420, 0.55));
+  scene.add(new AmbientLight(0xffffff, 0.18));
 
   const camera = new PerspectiveCamera(60, 1, 0.08, 400);
   const rig = new PerspectiveCamera();
@@ -170,6 +169,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   const camRight = new Vector3();
   const projectCenter = new Vector3();
   const projectEdge = new Vector3();
+  const panelCorners = [new Vector3(), new Vector3(), new Vector3(), new Vector3()];
   let yaw = 0;
   let pitch = 0;
   let yawTarget = 0;
@@ -260,7 +260,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   fadeMesh.userData.noGround = true;
   marker.userData.noGround = true;
 
-  const glassSlots = makeGlass(scene, options.panels ?? [], options.tier === "high");
+  const glassSlots = makeGlass(scene, options.panels ?? []);
   const edgeMaterials = new Set<MeshStandardMaterial>();
   const bridgeTemplates = new Map<string, Group>();
   const crystalTemplates = new Map<string, Group>();
@@ -663,8 +663,8 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   function syncGlass() {
     const stance = stanceFor(currentId) ?? plazaStance();
     const reading = readingMode && currentId !== "plaza";
-    const sideTarget = reading ? 0 : currentId === "plaza" ? 1.05 : 0.92;
-    const distanceTarget = reading ? 1.72 : 2.28;
+    const sideTarget = reading ? 0.05 : currentId === "plaza" ? 0.78 : 0.42;
+    const distanceTarget = reading ? 1.85 : 2.15;
     const blend = 1 - Math.exp(-4 * 0.016);
     panelSide += (sideTarget - panelSide) * blend;
     panelDistance += (distanceTarget - panelDistance) * blend;
@@ -672,17 +672,20 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     for (const slot of glassSlots) {
       const slotStance = stanceFor(slot.id) ?? plazaStance();
       const active = slot.id === currentId;
-      const anchor = panelAnchor(active ? stance : slotStance, active ? panelDistance : 2.3, active ? panelSide : 0);
-      const metersWide = active ? (reading ? 1.9 : 1.62) : 2.05;
-      const metersTall = active && reading ? 1.7 : 1.18;
+      const anchor = panelAnchor(active ? stance : slotStance, active ? panelDistance : 2.4, active ? panelSide : 0);
+      const metersWide = active ? (reading ? 1.48 : 1.58) : 1.7;
       slot.root.position.set(anchor.x, anchor.y, anchor.z);
-      slot.root.scale.set(metersWide / 2.36, metersTall / 1.46, 1);
-      if (!presenting) slot.root.quaternion.copy(camera.quaternion);
+      slot.root.up.set(0, 1, 0);
+      if (reading && active) anchor.y -= 0.42;
+      slot.root.lookAt(camera.position);
+      slot.root.rotateY(active ? (reading ? -0.1 : -0.26) : 0.16);
       slot.label.visible = presenting;
       if (!slot.element) continue;
       if (!project) {
-        if (presentation === "dock" && slot.id === currentId) {
-          slot.element.style.transform = "";
+        slot.element.style.width = "";
+        slot.element.style.maxHeight = "";
+        slot.element.style.transform = "";
+        if (presentation === "dock" && active) {
           slot.element.style.visibility = "visible";
           slot.element.style.opacity = "1";
           slot.element.style.pointerEvents = "auto";
@@ -692,35 +695,87 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
         }
         continue;
       }
-      projectPanel(slot, anchor, metersWide, active);
+      projectPanel(slot, metersWide, active, reading, flying);
     }
   }
 
-  function projectPanel(slot: GlassSlot, anchor: Vector3, metersWide: number, active: boolean) {
+  function projectPanel(slot: GlassSlot, metersWide: number, active: boolean, reading: boolean, inFlight: boolean) {
     const element = slot.element;
     if (!element) return;
-    projectCenter.copy(anchor).project(camera);
-    if (projectCenter.z < -1 || projectCenter.z > 1) {
-      element.style.visibility = "hidden";
-      return;
+    element.style.width = `${GLASS_CSS_WIDTH}px`;
+    element.style.transformOrigin = "0 0";
+    const cap = reading ? 760 : 700;
+    const natural = element.scrollHeight;
+    if (natural > cap + 8) {
+      element.style.maxHeight = `${cap}px`;
+      element.style.overflow = "auto";
+    } else {
+      element.style.maxHeight = "none";
+      element.style.overflow = "visible";
     }
-    camRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
-    projectEdge.copy(anchor).addScaledVector(camRight, metersWide / 2).project(camera);
-    const width = host.clientWidth || window.innerWidth;
-    const height = host.clientHeight || window.innerHeight;
-    const cx = (projectCenter.x * 0.5 + 0.5) * width;
-    const cy = (-projectCenter.y * 0.5 + 0.5) * height;
-    const ex = (projectEdge.x * 0.5 + 0.5) * width;
-    const scale = (Math.abs(ex - cx) * 2) / PANEL_LAYOUT;
-    if (!active && scale < 0.36) {
+    const boxW = element.offsetWidth || GLASS_CSS_WIDTH;
+    const boxH = element.offsetHeight || cap;
+    const metersTall = metersWide * (boxH / boxW);
+    slot.label.scale.set(metersWide / 2.2, metersTall / 1.32, 1);
+    slot.root.updateMatrixWorld(true);
+    const normal = projectCenter.set(0, 0, 1).applyQuaternion(slot.root.quaternion);
+    const facing = normal.dot(camRight.copy(camera.position).sub(slot.root.position));
+    if (facing < (inFlight ? 0.72 : 0.25)) {
       element.style.visibility = "hidden";
       element.style.pointerEvents = "none";
       return;
     }
+    const hx = metersWide / 2;
+    const hy = metersTall / 2;
+    const local = [
+      [-hx, hy],
+      [hx, hy],
+      [hx, -hy],
+      [-hx, -hy],
+    ];
+    const width = host.clientWidth || window.innerWidth;
+    const height = host.clientHeight || window.innerHeight;
+    const bounds = host.getBoundingClientRect();
+    const dest: number[] = [];
+    for (let i = 0; i < 4; i += 1) {
+      panelCorners[i].set(local[i][0], local[i][1], 0).applyMatrix4(slot.root.matrixWorld);
+      projectEdge.copy(panelCorners[i]).project(camera);
+      if (projectEdge.z < -1 || projectEdge.z > 1) {
+        element.style.visibility = "hidden";
+        element.style.pointerEvents = "none";
+        return;
+      }
+      dest.push((projectEdge.x * 0.5 + 0.5) * width + bounds.left, (-projectEdge.y * 0.5 + 0.5) * height + bounds.top);
+    }
+    const projectedWidth = Math.hypot(dest[2] - dest[0], dest[3] - dest[1]);
+    const area = Math.abs(
+      dest[0] * (dest[3] - dest[7]) +
+      dest[2] * (dest[5] - dest[1]) +
+      dest[4] * (dest[7] - dest[3]) +
+      dest[6] * (dest[1] - dest[5]),
+    ) / 2;
+    const offscreen = dest.some((value, index) => (
+      index % 2 === 0
+        ? value < -width * 0.35 || value > width * 1.35
+        : value < -height * 0.35 || value > height * 1.35
+    ));
+    if (offscreen || area < 8000 || area > width * height * 0.62 || (!active && projectedWidth < 90)) {
+      element.style.visibility = "hidden";
+      element.style.pointerEvents = "none";
+      return;
+    }
+    const matrix = homographyMatrix(
+      [0, 0, boxW, 0, boxW, boxH, 0, boxH],
+      dest,
+    );
+    if (!matrix) {
+      element.style.visibility = "hidden";
+      return;
+    }
     element.style.visibility = "visible";
     element.style.pointerEvents = active ? "auto" : "none";
-    element.style.opacity = active ? "1" : String(Math.max(0.35, Math.min(1, scale * 1.4)));
-    element.style.transform = `translate(-50%, -50%) translate(${cx}px, ${cy}px) scale(${Math.max(0.18, scale)})`;
+    element.style.opacity = active ? "1" : "0.82";
+    element.style.transform = `matrix3d(${matrix.join(",")})`;
   }
 
   function specFromPointer(event: PointerEvent): PortalSpec | null {
@@ -1070,45 +1125,89 @@ function blocked(object: Object3D): boolean {
   return false;
 }
 
-const GLASS_TINT: Record<string, number> = {
-  plaza: 0x9fd8ff,
-  projects: 0x3d7eff,
-  journal: 0x9b87ff,
-  workshop: 0xff8a3d,
-};
+function makeSky() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 2048;
+  canvas.height = 1024;
+  const context = canvas.getContext("2d");
+  if (!context) return new Color(0x140818);
+  const wash = context.createLinearGradient(0, 0, 0, canvas.height);
+  wash.addColorStop(0, "#07010f");
+  wash.addColorStop(0.42, "#140824");
+  wash.addColorStop(0.72, "#241038");
+  wash.addColorStop(1, "#09060f");
+  context.fillStyle = wash;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  const clouds: [number, number, number, string][] = [
+    [360, 280, 320, "rgba(155, 135, 255, 0.38)"],
+    [980, 360, 420, "rgba(61, 126, 255, 0.3)"],
+    [1560, 240, 280, "rgba(255, 79, 163, 0.24)"],
+    [720, 640, 340, "rgba(94, 231, 216, 0.14)"],
+    [1680, 700, 260, "rgba(255, 138, 61, 0.18)"],
+  ];
+  for (const [x, y, radius, color] of clouds) {
+    const glow = context.createRadialGradient(x, y, 0, x, y, radius);
+    glow.addColorStop(0, color);
+    glow.addColorStop(1, "rgba(0, 0, 0, 0)");
+    context.fillStyle = glow;
+    context.beginPath();
+    context.arc(x, y, radius, 0, Math.PI * 2);
+    context.fill();
+  }
+  for (let i = 0; i < 900; i += 1) {
+    const x = (i * 97) % canvas.width;
+    const y = (i * 57) % canvas.height;
+    const size = i % 18 === 0 ? 2 : 1;
+    const alpha = 0.35 + ((i * 17) % 60) / 100;
+    context.fillStyle = `rgba(244, 240, 230, ${alpha})`;
+    context.fillRect(x, y, size, size);
+  }
+  const texture = new CanvasTexture(canvas);
+  texture.mapping = EquirectangularReflectionMapping;
+  texture.colorSpace = SRGBColorSpace;
+  texture.needsUpdate = true;
+  return texture;
+}
 
-function makeGlass(scene: Scene, panels: GlassPanel[], transmission: boolean): GlassSlot[] {
+function homographyMatrix(src: number[], dst: number[]): number[] | null {
+  const rows: number[][] = [];
+  for (let i = 0; i < 4; i += 1) {
+    const x = src[i * 2];
+    const y = src[i * 2 + 1];
+    const u = dst[i * 2];
+    const v = dst[i * 2 + 1];
+    rows.push([x, y, 1, 0, 0, 0, -u * x, -u * y, u]);
+    rows.push([0, 0, 0, x, y, 1, -v * x, -v * y, v]);
+  }
+  for (let col = 0; col < 8; col += 1) {
+    let pivot = col;
+    for (let row = col + 1; row < 8; row += 1) {
+      if (Math.abs(rows[row][col]) > Math.abs(rows[pivot][col])) pivot = row;
+    }
+    if (Math.abs(rows[pivot][col]) < 1e-8) return null;
+    [rows[col], rows[pivot]] = [rows[pivot], rows[col]];
+    const divisor = rows[col][col];
+    for (let c = col; c < 9; c += 1) rows[col][c] /= divisor;
+    for (let row = 0; row < 8; row += 1) {
+      if (row === col) continue;
+      const factor = rows[row][col];
+      for (let c = col; c < 9; c += 1) rows[row][c] -= factor * rows[col][c];
+    }
+  }
+  const [a, b, c, d, e, f, g, h] = rows.map((row) => row[8]);
+  return [a, d, 0, g, b, e, 0, h, 0, 0, 1, 0, c, f, 0, 1];
+}
+
+function makeGlass(scene: Scene, panels: GlassPanel[]): GlassSlot[] {
   return ["plaza", "projects", "journal", "workshop"].map((id) => {
     const element = panels.find((panel) => panel.id === id)?.element ?? null;
-    const tint = GLASS_TINT[id] ?? 0xffffff;
-    const glass = new MeshPhysicalMaterial({
-      color: 0x10141c,
-      metalness: 0.04,
-      roughness: 0.16,
-      transmission: transmission ? 0.72 : 0,
-      thickness: 0.18,
-      transparent: true,
-      opacity: transmission ? 0.42 : 0.5,
-      envMapIntensity: 1.15,
-      clearcoat: 0.55,
-      clearcoatRoughness: 0.22,
-      side: DoubleSide,
-      depthWrite: false,
-    });
     const root = new Group();
     root.userData.noGround = true;
-    const slab = new Mesh(new BoxGeometry(2.36, 1.46, 0.055), glass);
-    const rim = new Mesh(
-      new BoxGeometry(2.48, 1.58, 0.04),
-      new MeshBasicMaterial({ color: tint, transparent: true, opacity: 0.28, depthWrite: false }),
-    );
     const label = makeLabel(id);
-    label.position.z = 0.05;
+    label.position.z = 0.02;
     label.visible = false;
-    slab.userData.noGround = true;
-    rim.userData.noGround = true;
     label.userData.noGround = true;
-    root.add(slab, rim, label);
+    root.add(label);
     scene.add(root);
     return { id, element, root, label };
   });
