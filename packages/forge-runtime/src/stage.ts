@@ -46,13 +46,7 @@ import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFa
 import { XRHandModelFactory } from "three/addons/webxr/XRHandModelFactory.js";
 import type { QualityTier } from "./index.ts";
 import { HUB_INSTANCES, type HubInstance } from "./hub.ts";
-import {
-  panelAnchor,
-  plazaStance,
-  smoothstep,
-  stanceFor,
-  type Stance,
-} from "./layout.ts";
+import { plazaStance, smoothstep, stanceFor } from "./layout.ts";
 
 export interface PortalSpec {
   id: string;
@@ -122,7 +116,7 @@ const up = new Vector3(0, 1, 0);
 
 const YAW_LIMIT = 2.35;
 const PITCH_LIMIT = 0.42;
-const GLASS_CSS_WIDTH = 820;
+const VR_PANEL_DISTANCE = 1.35;
 
 export async function startStage(host: HTMLElement, options: StageOptions): Promise<StageHandle> {
   const desktop = options.tier === "high";
@@ -164,10 +158,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   const flightToPos = new Vector3();
   const flightFromQuat = new Quaternion();
   const flightToQuat = new Quaternion();
-  const camRight = new Vector3();
-  const projectCenter = new Vector3();
-  const projectEdge = new Vector3();
-  const panelCorners = [new Vector3(), new Vector3(), new Vector3(), new Vector3()];
+  const viewForward = new Vector3();
   let yaw = 0;
   let pitch = 0;
   let yawTarget = 0;
@@ -178,8 +169,6 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   let currentId = "plaza";
   let readingMode = options.initialReading === true;
   let presentation: StagePresentation = "world";
-  let panelSide = 0.9;
-  let panelDistance = 2.25;
   let dragging = false;
   let dragId = -1;
   let dragX = 0;
@@ -651,121 +640,33 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   }
 
   function syncGlass() {
-    const stance = stanceFor(currentId) ?? plazaStance();
-    const reading = readingMode && currentId !== "plaza";
-    const sideTarget = reading ? 0.05 : currentId === "plaza" ? 0.78 : 0.42;
-    const distanceTarget = reading ? 1.85 : 2.15;
-    const blend = 1 - Math.exp(-4 * 0.016);
-    panelSide += (sideTarget - panelSide) * blend;
-    panelDistance += (distanceTarget - panelDistance) * blend;
-    const project = presentation === "world" && !presenting;
-    for (const slot of glassSlots) {
-      const slotStance = stanceFor(slot.id) ?? plazaStance();
-      const active = slot.id === currentId;
-      const anchor = panelAnchor(active ? stance : slotStance, active ? panelDistance : 2.4, active ? panelSide : 0);
-      const metersWide = active ? (reading ? 1.48 : 1.58) : 1.7;
-      slot.root.position.set(anchor.x, anchor.y, anchor.z);
-      slot.root.up.set(0, 1, 0);
-      if (reading && active) anchor.y -= 0.42;
-      slot.root.lookAt(camera.position);
-      slot.root.rotateY(active ? (reading ? -0.1 : -0.26) : 0.16);
-      slot.label.visible = presenting;
-      if (!slot.element) continue;
-      if (!project) {
-        slot.element.style.width = "";
-        slot.element.style.maxHeight = "";
-        slot.element.style.transform = "";
-        if (presentation === "dock" && active) {
-          slot.element.style.visibility = "visible";
-          slot.element.style.opacity = "1";
-          slot.element.style.pointerEvents = "auto";
-        } else {
-          slot.element.style.visibility = "hidden";
-          slot.element.style.pointerEvents = "none";
-        }
-        continue;
+    document.body.classList.toggle("is-traveling", flying && presentation !== "list");
+    if (presenting) {
+      const xrCamera = renderer.xr.getCamera();
+      viewForward.set(0, 0, -1).applyQuaternion(xrCamera.quaternion);
+      for (const slot of glassSlots) {
+        const active = slot.id === currentId;
+        slot.label.visible = active;
+        if (!active) continue;
+        slot.root.position.copy(xrCamera.position).addScaledVector(viewForward, VR_PANEL_DISTANCE);
+        slot.root.quaternion.copy(xrCamera.quaternion);
+        slot.label.scale.set(1.22 / 2.2, 0.78 / 1.32, 1);
       }
-      projectPanel(slot, metersWide, active, reading, flying);
-    }
-  }
-
-  function projectPanel(slot: GlassSlot, metersWide: number, active: boolean, reading: boolean, inFlight: boolean) {
-    const element = slot.element;
-    if (!element) return;
-    element.style.width = `${GLASS_CSS_WIDTH}px`;
-    element.style.transformOrigin = "0 0";
-    const cap = reading ? 760 : 700;
-    const natural = element.scrollHeight;
-    if (natural > cap + 8) {
-      element.style.maxHeight = `${cap}px`;
-      element.style.overflow = "auto";
     } else {
-      element.style.maxHeight = "none";
-      element.style.overflow = "visible";
+      for (const slot of glassSlots) slot.label.visible = false;
     }
-    const boxW = element.offsetWidth || GLASS_CSS_WIDTH;
-    const boxH = element.offsetHeight || cap;
-    const metersTall = metersWide * (boxH / boxW);
-    slot.label.scale.set(metersWide / 2.2, metersTall / 1.32, 1);
-    slot.root.updateMatrixWorld(true);
-    const normal = projectCenter.set(0, 0, 1).applyQuaternion(slot.root.quaternion);
-    const facing = normal.dot(camRight.copy(camera.position).sub(slot.root.position));
-    if (facing < (inFlight ? 0.72 : 0.25)) {
-      element.style.visibility = "hidden";
-      element.style.pointerEvents = "none";
-      return;
+    for (const slot of glassSlots) {
+      const element = slot.element;
+      if (!element) continue;
+      element.style.width = "";
+      element.style.maxHeight = "";
+      element.style.transform = "";
+      element.style.removeProperty("opacity");
+      const active = slot.id === currentId;
+      const show = active && presentation !== "list" && !presenting;
+      element.style.visibility = show ? "visible" : "hidden";
+      element.style.pointerEvents = show && !flying ? "auto" : "none";
     }
-    const hx = metersWide / 2;
-    const hy = metersTall / 2;
-    const local = [
-      [-hx, hy],
-      [hx, hy],
-      [hx, -hy],
-      [-hx, -hy],
-    ];
-    const width = host.clientWidth || window.innerWidth;
-    const height = host.clientHeight || window.innerHeight;
-    const bounds = host.getBoundingClientRect();
-    const dest: number[] = [];
-    for (let i = 0; i < 4; i += 1) {
-      panelCorners[i].set(local[i][0], local[i][1], 0).applyMatrix4(slot.root.matrixWorld);
-      projectEdge.copy(panelCorners[i]).project(camera);
-      if (projectEdge.z < -1 || projectEdge.z > 1) {
-        element.style.visibility = "hidden";
-        element.style.pointerEvents = "none";
-        return;
-      }
-      dest.push((projectEdge.x * 0.5 + 0.5) * width + bounds.left, (-projectEdge.y * 0.5 + 0.5) * height + bounds.top);
-    }
-    const projectedWidth = Math.hypot(dest[2] - dest[0], dest[3] - dest[1]);
-    const area = Math.abs(
-      dest[0] * (dest[3] - dest[7]) +
-      dest[2] * (dest[5] - dest[1]) +
-      dest[4] * (dest[7] - dest[3]) +
-      dest[6] * (dest[1] - dest[5]),
-    ) / 2;
-    const offscreen = dest.some((value, index) => (
-      index % 2 === 0
-        ? value < -width * 0.35 || value > width * 1.35
-        : value < -height * 0.35 || value > height * 1.35
-    ));
-    if (offscreen || area < 8000 || area > width * height * 0.62 || (!active && projectedWidth < 90)) {
-      element.style.visibility = "hidden";
-      element.style.pointerEvents = "none";
-      return;
-    }
-    const matrix = homographyMatrix(
-      [0, 0, boxW, 0, boxW, boxH, 0, boxH],
-      dest,
-    );
-    if (!matrix) {
-      element.style.visibility = "hidden";
-      return;
-    }
-    element.style.visibility = "visible";
-    element.style.pointerEvents = active ? "auto" : "none";
-    element.style.opacity = active ? "1" : "0.82";
-    element.style.transform = `matrix3d(${matrix.join(",")})`;
   }
 
   function specFromPointer(event: PointerEvent): PortalSpec | null {
@@ -948,6 +849,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     host.dataset.ready = "false";
     host.dataset.quality = "quiet";
     host.dataset.flying = "false";
+    document.body.classList.remove("is-traveling");
   }
 
   function setPresentation(mode: StagePresentation) {
@@ -1157,35 +1059,6 @@ function makeSky() {
   texture.colorSpace = SRGBColorSpace;
   texture.needsUpdate = true;
   return texture;
-}
-
-function homographyMatrix(src: number[], dst: number[]): number[] | null {
-  const rows: number[][] = [];
-  for (let i = 0; i < 4; i += 1) {
-    const x = src[i * 2];
-    const y = src[i * 2 + 1];
-    const u = dst[i * 2];
-    const v = dst[i * 2 + 1];
-    rows.push([x, y, 1, 0, 0, 0, -u * x, -u * y, u]);
-    rows.push([0, 0, 0, x, y, 1, -v * x, -v * y, v]);
-  }
-  for (let col = 0; col < 8; col += 1) {
-    let pivot = col;
-    for (let row = col + 1; row < 8; row += 1) {
-      if (Math.abs(rows[row][col]) > Math.abs(rows[pivot][col])) pivot = row;
-    }
-    if (Math.abs(rows[pivot][col]) < 1e-8) return null;
-    [rows[col], rows[pivot]] = [rows[pivot], rows[col]];
-    const divisor = rows[col][col];
-    for (let c = col; c < 9; c += 1) rows[col][c] /= divisor;
-    for (let row = 0; row < 8; row += 1) {
-      if (row === col) continue;
-      const factor = rows[row][col];
-      for (let c = col; c < 9; c += 1) rows[row][c] -= factor * rows[col][c];
-    }
-  }
-  const [a, b, c, d, e, f, g, h] = rows.map((row) => row[8]);
-  return [a, d, 0, g, b, e, 0, h, 0, 0, 1, 0, c, f, 0, 1];
 }
 
 function makeGlass(scene: Scene, panels: GlassPanel[]): GlassSlot[] {

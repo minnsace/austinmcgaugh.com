@@ -968,6 +968,26 @@ body.is-world:not(.is-list) .forge-stage::after {
   transform-origin: 0 0;
 }
 
+body.is-world:not(.is-list):not(.is-narrow) .forge-glass.is-active {
+  position: fixed;
+  left: 1.35rem;
+  top: 5.4rem;
+  width: min(560px, 46vw);
+  max-height: calc(100vh - 11rem);
+  overflow: auto;
+  transform: none;
+  z-index: 12;
+}
+
+body.is-world .forge-glass {
+  transition: opacity 280ms ease;
+}
+
+body.is-world.is-traveling .forge-glass.is-active {
+  opacity: 0;
+  pointer-events: none;
+}
+
 body.is-world:not(.is-list) .forge-glass h1,
 body.is-world:not(.is-list) .forge-glass .page-header h1,
 body.is-world:not(.is-list) .forge-glass .panel-hero h1 {
