@@ -48,6 +48,38 @@ export function bootForge() {
   if (!host) return;
 
   const world = createWorld();
+  const soundButton = document.querySelector<HTMLButtonElement>(".sound-toggle");
+  const soundKey = "forge-sound";
+  const soundChoice = () => {
+    try {
+      return localStorage.getItem(soundKey) === "on";
+    } catch {
+      return false;
+    }
+  };
+  const reducedNow = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const applySound = () => {
+    const on = soundChoice() && Boolean(handle);
+    soundButton?.setAttribute("aria-pressed", soundChoice() ? "true" : "false");
+    if (soundButton) soundButton.textContent = soundChoice() ? "Sound on" : "Sound";
+    handle?.setSound(on, reducedNow());
+  };
+  soundButton?.addEventListener("click", () => {
+    try {
+      localStorage.setItem(soundKey, soundChoice() ? "off" : "on");
+    } catch {
+      /* private mode */
+    }
+    applySound();
+    if (soundChoice()) handle?.playClick();
+  });
+  document.addEventListener("click", (event) => {
+    const target = event.target as Element | null;
+    const link = target?.closest("a, button");
+    if (!link || link.classList.contains("sound-toggle")) return;
+    if (!link.closest(".site-nav, .forge-glass, .site-header")) return;
+    handle?.playClick();
+  });
   const controls = document.createElement("div");
   controls.className = "forge-controls";
   const quietButton = document.createElement("button");
@@ -116,6 +148,7 @@ export function bootForge() {
       });
       world.attach(handle);
       host.dataset.quality = tier;
+      applySound();
       void offerVR();
     } catch (error) {
       console.error(error);
@@ -131,6 +164,7 @@ export function bootForge() {
     if (handle) {
       writeForgeChoice(localStorage, "quiet");
       world.detach();
+      handle.setSound(false);
       handle.dispose();
       handle = null;
       motionButton.hidden = true;

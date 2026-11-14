@@ -42,10 +42,22 @@ const canonical = absoluteUrl(`/projects/${project.id}/`);
     />
     <ProjectMeta project={project} />
     <p class="cluster">
-      <a class="button" href={project.data.url} target="_blank" rel="noopener noreferrer">
-        {project.data.linkLabel}
-        <span class="visually-hidden"> (opens in a new tab)</span>
-      </a>
+      {
+        project.data.url && project.data.linkLabel && (
+          <a class="button" href={project.data.url} target="_blank" rel="noopener noreferrer">
+            {project.data.linkLabel}
+            <span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        )
+      }
+      {
+        project.data.steam && (
+          <a class="button" href={project.data.steam} target="_blank" rel="noopener noreferrer">
+            View on Steam
+            <span class="visually-hidden"> (opens in a new tab)</span>
+          </a>
+        )
+      }
       {
         project.data.repository && (
           <a class="text-link" href={project.data.repository} target="_blank" rel="noopener noreferrer">

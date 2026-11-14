@@ -89,7 +89,7 @@ export function projectGraph(project: CollectionEntry<"projects">, canonical: st
       "@type": "VideoGame",
       name: project.data.title,
       description: project.data.description,
-      url: project.data.url,
+      url: project.data.url ?? canonical,
       sameAs: project.data.repository,
       datePublished: project.data.date ? project.data.date.toISOString().slice(0, 10) : undefined,
       operatingSystem: project.data.platform,
@@ -101,7 +101,7 @@ export function projectGraph(project: CollectionEntry<"projects">, canonical: st
             price: "0",
             priceCurrency: "USD",
             description: project.data.price,
-            url: project.data.url,
+            url: project.data.url ?? canonical,
           }
         : undefined,
     },

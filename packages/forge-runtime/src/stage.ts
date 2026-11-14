@@ -3,6 +3,8 @@ import {
   AgXToneMapping,
   AmbientLight,
   BackSide,
+  BufferAttribute,
+  BufferGeometry,
   CanvasTexture,
   Color,
   CylinderGeometry,
@@ -19,6 +21,8 @@ import {
   Object3D,
   PerspectiveCamera,
   PlaneGeometry,
+  Points,
+  PointsMaterial,
   Quaternion,
   Raycaster,
   RepeatWrapping,
@@ -45,7 +49,9 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { XRHandModelFactory } from "three/addons/webxr/XRHandModelFactory.js";
 import type { QualityTier } from "./index.ts";
+import { dressForgeGlass, moltenTime } from "./glass.ts";
 import { HUB_INSTANCES, type HubInstance } from "./hub.ts";
+import { createForgeSound, type ForgeSound } from "./sound.ts";
 import { plazaStance, smoothstep, stanceFor } from "./layout.ts";
 
 export interface PortalSpec {
@@ -99,6 +105,8 @@ export interface StageHandle {
   goTo: (id: string, options?: { fly?: boolean; reading?: boolean }) => void;
   setPresentation: (mode: StagePresentation) => void;
   enableMotion: () => Promise<boolean>;
+  setSound: (on: boolean, reduced?: boolean) => void;
+  playClick: () => void;
 }
 
 interface Bob {
@@ -256,6 +264,8 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   const sharedMaterials = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
   const distantSilhouette = new MeshBasicMaterial({ color: 0x241833 });
   const questTier = options.tier === "quest";
+  const sound: ForgeSound = createForgeSound();
+  let embers: { positions: Float32Array; seeds: Float32Array; count: number; attribute: BufferAttribute } | null = null;
 
   try {
     renderer.render(scene, camera);
@@ -435,6 +445,8 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     if (instance.asset === "Forge_Asset") {
       collectForge(node);
       energy.push(...emissiveMaterials(node));
+      dressForgeGlass(node, options.tier);
+      addAtmosphere();
       canvas.classList.add("is-ready");
       host.dataset.ready = "true";
       host.dataset.quality = options.tier;
@@ -535,6 +547,9 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       const base = material.userData.baseIntensity as number;
       material.emissiveIntensity = base * pulse;
     }
+    moltenTime.value = time;
+    if (embers) driftEmbers(time, dt);
+    sound.setDistance(camera.position.length());
     const edgePulse = 0.72 + Math.sin(time * 1.45) * 0.28;
     for (const material of edgeMaterials) {
       const base = (material.userData.baseIntensity as number) || 1;
@@ -581,6 +596,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     stanceQuat.copy(rig.quaternion);
     const distance = camera.position.distanceTo(stancePos);
     const travel = next?.fly !== false && !motionReduced() && distance > 0.4;
+    if (travel) sound.whoosh();
     yawTarget = 0;
     pitchTarget = 0;
     if (!travel) {
@@ -850,6 +866,16 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     host.dataset.quality = "quiet";
     host.dataset.flying = "false";
     document.body.classList.remove("is-traveling");
+    sound.stop();
+  }
+
+  function setSound(on: boolean, reduced = motionReduced()) {
+    sound.setReduced(reduced);
+    sound.setEnabled(on);
+  }
+
+  function playClick() {
+    sound.click();
   }
 
   function setPresentation(mode: StagePresentation) {
@@ -877,7 +903,84 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     pitchTarget = clamp(((beta - 68) / 32) * PITCH_LIMIT, -PITCH_LIMIT, PITCH_LIMIT);
   }
 
-  return { dispose, enterVR, goTo, setPresentation, enableMotion };
+  return { dispose, enterVR, goTo, setPresentation, enableMotion, setSound, playClick };
+
+  function addAtmosphere() {
+    const layers = options.tier === "high" ? 3 : options.tier === "quest" ? 1 : 2;
+    const heights = [-1.2, -6, -14];
+    const radii = [70, 120, 180];
+    for (let i = 0; i < layers; i += 1) {
+      const haze = new Mesh(
+        new PlaneGeometry(radii[i] * 2, radii[i] * 2),
+        new MeshBasicMaterial({
+          map: hazeTexture(),
+          transparent: true,
+          depthWrite: false,
+          opacity: 0.28,
+          color: 0x3a1860,
+        }),
+      );
+      haze.rotation.x = -Math.PI / 2;
+      haze.position.y = heights[i];
+      haze.userData.noGround = true;
+      scene.add(haze);
+    }
+    const shafts = options.tier === "high" ? 5 : options.tier === "quest" ? 2 : 3;
+    const shaftMap = shaftTexture();
+    for (let i = 0; i < shafts; i += 1) {
+      const beam = new Sprite(new SpriteMaterial({
+        map: shaftMap,
+        color: i % 2 === 0 ? 0xffb070 : 0xff4fa3,
+        transparent: true,
+        blending: AdditiveBlending,
+        depthWrite: false,
+        opacity: 0.16,
+      }));
+      beam.position.set((i - shafts / 2) * 0.35, 6.5, (i % 2 === 0 ? -0.2 : 0.25));
+      beam.scale.set(1.4, 11, 1);
+      beam.userData.noGround = true;
+      scene.add(beam);
+    }
+    const count = options.tier === "high" ? 160 : options.tier === "quest" ? 28 : 70;
+    const positions = new Float32Array(count * 3);
+    const seeds = new Float32Array(count);
+    for (let i = 0; i < count; i += 1) {
+      positions[i * 3] = (Math.random() - 0.5) * 7;
+      positions[i * 3 + 1] = Math.random() * 13;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 7;
+      seeds[i] = Math.random() * Math.PI * 2;
+    }
+    const geometry = new BufferGeometry();
+    const attribute = new BufferAttribute(positions, 3);
+    geometry.setAttribute("position", attribute);
+    const points = new Points(geometry, new PointsMaterial({
+      color: 0xff8a3d,
+      size: options.tier === "quest" ? 0.12 : 0.07,
+      transparent: true,
+      opacity: 0.75,
+      depthWrite: false,
+      blending: AdditiveBlending,
+      sizeAttenuation: true,
+    }));
+    points.userData.noGround = true;
+    scene.add(points);
+    embers = { positions, seeds, count, attribute };
+  }
+
+  function driftEmbers(time: number, dt: number) {
+    if (!embers) return;
+    const { positions, seeds, count, attribute } = embers;
+    for (let i = 0; i < count; i += 1) {
+      positions[i * 3 + 1] += dt * (0.35 + (i % 5) * 0.05);
+      positions[i * 3] += Math.sin(time * 0.6 + seeds[i]) * dt * 0.15;
+      if (positions[i * 3 + 1] > 14) {
+        positions[i * 3 + 1] = 0.2;
+        positions[i * 3] = (Math.random() - 0.5) * 7;
+        positions[i * 3 + 2] = (Math.random() - 0.5) * 7;
+      }
+    }
+    attribute.needsUpdate = true;
+  }
 
   function collectForge(forge: Object3D) {
     forge.traverse((node) => {
@@ -1015,6 +1118,39 @@ function blocked(object: Object3D): boolean {
     node = node.parent;
   }
   return false;
+}
+
+function hazeTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 256;
+  const context = canvas.getContext("2d");
+  if (!context) return new CanvasTexture(canvas);
+  const glow = context.createRadialGradient(128, 128, 20, 128, 128, 128);
+  glow.addColorStop(0, "rgba(90, 40, 140, 0.55)");
+  glow.addColorStop(1, "rgba(90, 40, 140, 0)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, 256, 256);
+  const texture = new CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function shaftTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 64;
+  canvas.height = 256;
+  const context = canvas.getContext("2d");
+  if (!context) return new CanvasTexture(canvas);
+  const glow = context.createLinearGradient(0, 0, 0, 256);
+  glow.addColorStop(0, "rgba(255, 210, 160, 0)");
+  glow.addColorStop(0.35, "rgba(255, 170, 90, 0.85)");
+  glow.addColorStop(1, "rgba(255, 70, 150, 0)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, 64, 256);
+  const texture = new CanvasTexture(canvas);
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function makeSky() {

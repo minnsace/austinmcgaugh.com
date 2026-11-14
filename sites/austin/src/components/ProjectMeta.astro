@@ -21,7 +21,7 @@ const { project } = Astro.props;
   {
     project.data.date && (
       <div>
-        <dt>Released</dt>
+        <dt>{project.data.status === "Released" ? "Released" : "Date"}</dt>
         <dd>
           <time datetime={project.data.date.toISOString()}>{formatDate(project.data.date)}</time>
         </dd>

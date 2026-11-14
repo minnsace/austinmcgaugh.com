@@ -163,7 +163,8 @@ for (const page of pages) {
 
 const home = htmlFiles.includes("index.html") ? read("index.html") : "";
 check(home.includes("I’m Austin McGaugh, founder of Minnsace Inc."), "Home hero copy");
-check(home.includes("Deadlight Tavern"), "Home latest project");
+check(home.includes("The Lethecary"), "Home latest project");
+check(!home.includes("Deadlight Tavern"), "Lethecary replaced Deadlight as the latest project");
 check(home.includes("I Bought a $5 Domain on Impulse."), "Home shows the journal post");
 check(home.includes("Nothing published yet"), "Home still has an empty video slot");
 
@@ -180,6 +181,14 @@ check(snake.includes("pygame-ce") && snake.includes("WebAssembly") && snake.incl
 check(snake.includes("GitHub Copilot") && snake.includes("GoDaddy"), "FreeSnake origin");
 check(snake.includes("/journal/i-bought-a-5-domain-on-impulse/"), "FreeSnake links the journal post");
 check(!/power-ups|voice chat|battery level|pygbag/i.test(snake), "FreeSnake page invented a feature");
+
+const lethecary = htmlFiles.includes("projects/the-lethecary/index.html") ? read("projects/the-lethecary/index.html") : "";
+check(lethecary.includes("In development"), "Lethecary status");
+check(lethecary.includes("rewrite the memory until they forget"), "Lethecary copy");
+check(lethecary.includes("Being built in public"), "Lethecary public-build note");
+check(lethecary.includes("/journal/"), "Lethecary links the journal");
+check(!lethecary.includes("store.steampowered.com"), "Lethecary hides the Steam link until a URL is set");
+check(!lethecary.includes("View on Steam"), "Lethecary does not show a Steam button");
 
 const journal = htmlFiles.includes("journal/index.html") ? read("journal/index.html") : "";
 check(journal.includes("I Bought a $5 Domain on Impulse."), "Journal lists the post");
@@ -283,6 +292,7 @@ for (const url of [
   "https://austinmcgaugh.com/projects/",
   "https://austinmcgaugh.com/projects/deadlight-tavern/",
   "https://austinmcgaugh.com/projects/free-snake-game/",
+  "https://austinmcgaugh.com/projects/the-lethecary/",
   "https://austinmcgaugh.com/journal/",
   "https://austinmcgaugh.com/journal/i-bought-a-5-domain-on-impulse/",
   "https://austinmcgaugh.com/workshop/",

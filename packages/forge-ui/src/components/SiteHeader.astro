@@ -17,6 +17,7 @@ const { brand, current } = Astro.props;
       {brand.name}
     </a>
     <a class="list-toggle" href="#main" aria-pressed="false">List view</a>
+    <button type="button" class="sound-toggle" aria-pressed="false">Sound</button>
     <nav class="site-nav" aria-label="Main">
       {
         brand.portals.map((portal) => (

@@ -37,8 +37,9 @@ const projects = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    url: z.string().url(),
-    linkLabel: z.string(),
+    url: z.string().url().optional(),
+    linkLabel: z.string().optional(),
+    steam: z.string().url().optional(),
     repository: z.string().url().optional(),
     repositoryLabel: z.string().optional(),
     status: z.string(),
@@ -48,6 +49,14 @@ const projects = defineCollection({
     price: z.string().optional(),
     platform: z.string().optional(),
     draft: z.boolean().default(false),
+  }).superRefine((value, context) => {
+    if (value.url && !value.linkLabel) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "A project link needs a label.",
+        path: ["linkLabel"],
+      });
+    }
   }),
 });
 
