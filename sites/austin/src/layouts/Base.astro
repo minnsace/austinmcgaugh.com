@@ -70,5 +70,9 @@ const year = new Date().getUTCFullYear();
       <slot />
     </main>
     <SiteFooter brand={brand} year={year} />
+    <script>
+      import { bootForge } from "../scripts/boot-forge";
+      bootForge();
+    </script>
   </body>
 </html>

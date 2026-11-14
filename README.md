@@ -130,3 +130,9 @@ The portrait source is `sites/austin/src/assets/austin-mcgaugh.png`. The build w
 GitHub Actions builds this package and deploys `sites/austin/dist` to Pages. The custom domain is `austinmcgaugh.com`, from `sites/austin/public/CNAME`.
 
 After this lands on `main`, turn on **Enforce HTTPS** in the repository’s Pages settings. The certificate already covers the domain. HTTP still answers until that switch is on, and the repo cannot flip it.
+
+## The stage and Quest 3
+
+The scene starts after the first paint. JavaScript off, quiet mode, reduced motion, and Save-Data leave the poster in place. A Quiet / Show the forge button remembers the choice in this browser.
+
+On a Quest 3, open `https://austinmcgaugh.com` in the Quest Browser. Enter VR appears only if the browser can start an immersive session. Point a controller, or pinch with hand tracking, at a portal and pull the trigger or pinch to open that page. The session ends and the browser shows the URL. Push the thumbstick to aim, then release to blink there. There is no smooth walking. Desktop keeps the slow camera drift. Phones can drag the view in the margins around the page and tap a portal.

@@ -134,7 +134,7 @@ for (const page of pages) {
     check(marked.length === 0, `${page} should not mark a portal current`);
   }
   const scripts = [...document.querySelectorAll("script")].filter((script) => script.getAttribute("type") !== "application/ld+json");
-  check(scripts.length === 0, `${page} should ship no executable script, found ${scripts.length}`);
+  check(scripts.length <= 1 && scripts.every((script) => script.getAttribute("type") === "module"), `${page} should only add the stage boot module`);
   check(!html.includes("Example article") && !html.includes("REPLACE_ME"), `${page} published a draft`);
 
   const urls = [];
@@ -247,6 +247,18 @@ check(legacy.includes("<rss") && legacy.includes("I Bought a $5 Domain on Impuls
 check(readDist("robots.txt").includes("https://austinmcgaugh.com/sitemap-index.xml"), "robots sitemap");
 check(readDist("CNAME").trim() === "austinmcgaugh.com", "CNAME");
 check(existsSync(join(dist, "favicon.svg")) && existsSync(join(dist, "favicon.ico")) && existsSync(join(dist, "og.png")), "Icons and social image");
+for (const asset of [
+  "models/Forge_Asset01_web.glb",
+  "models/Island_01_web.glb",
+  "models/Forge_Env_Nebula.hdr",
+  "models/Portal_Projects_web.glb",
+  "models/Portal_Knowledge_web.glb",
+  "models/Portal_Workshop_web.glb",
+  "draco/draco_decoder.wasm",
+  "basis/basis_transcoder.wasm",
+]) {
+  check(existsSync(join(dist, asset)), `Missing stage asset ${asset}`);
+}
 
 const sitemapFiles = files.filter((file) => file.endsWith(".xml") && file.includes("sitemap"));
 const sitemap = sitemapFiles.map((file) => readFileSync(file, "utf8")).join("\n");

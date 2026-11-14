@@ -1,17 +1,20 @@
 /**
  * Digital Forge runtime, phase 1.
  *
- * The website ships this as a typed contract only. `mount` does not create a
- * canvas and this module does not import three. Phase 2 puts a Three.js
- * WebGLRenderer inside the stage element and starts the frame loop from here,
- * still behind the same quality switch.
+ * Quality, shots, and the decision to start the stage live here so the page
+ * can import them without Three.js. The renderer itself is `startStage` in
+ * `./stage`, loaded only after the first paint.
  */
 
 export const FORGE_STAGE_ID = "forge-stage";
 
-export const QUALITY_TIERS = ["quiet", "standard", "high"] as const;
+export const QUALITY_TIERS = ["quiet", "standard", "high", "quest"] as const;
 
 export type QualityTier = (typeof QUALITY_TIERS)[number];
+
+export const FORGE_CHOICE_KEY = "forge-choice";
+
+export type ForgeChoice = "quiet" | "full";
 
 export interface QualitySignals {
   /** Visitor asked the system to reduce motion. */
@@ -20,6 +23,10 @@ export interface QualitySignals {
   saveData?: boolean;
   /** False when WebGL is missing or the frame probe failed. */
   webgl?: boolean;
+  /** A wide screen with a fine pointer. Bloom and transmission stay here. */
+  desktop?: boolean;
+  /** An immersive session is starting. Skips the composer. */
+  xr?: boolean;
   /** An explicit choice. Overrides the signals above. */
   force?: QualityTier;
 }
@@ -27,14 +34,42 @@ export interface QualitySignals {
 /**
  * Pick a quality tier.
  *
- * Quiet mode is the poster and no loop. Phase 1 forces quiet at render time
- * because there is no scene yet. Phase 2 stops forcing it and passes the
- * real signals from the browser.
+ * Quiet mode is the poster and no loop. Phones get standard. Desktop gets
+ * high. An immersive headset gets quest for the session.
  */
 export function resolveQuality(signals: QualitySignals = {}): QualityTier {
   if (signals.force) return signals.force;
   if (signals.reducedMotion || signals.saveData || signals.webgl === false) return "quiet";
+  if (signals.xr) return "quest";
+  if (signals.desktop) return "high";
   return "standard";
+}
+
+export function readForgeChoice(storage: { getItem(key: string): string | null }): ForgeChoice | null {
+  const value = storage.getItem(FORGE_CHOICE_KEY);
+  return value === "quiet" || value === "full" ? value : null;
+}
+
+export function writeForgeChoice(storage: { setItem(key: string, value: string): void }, choice: ForgeChoice) {
+  storage.setItem(FORGE_CHOICE_KEY, choice);
+}
+
+/**
+ * Whether the stage should start. An explicit quiet choice sticks. An explicit
+ * full choice still needs WebGL. Otherwise reduced motion, Save-Data, and a
+ * failed probe stay on the poster.
+ */
+export function shouldStartForge(input: {
+  choice: ForgeChoice | null;
+  reducedMotion: boolean;
+  saveData: boolean;
+  webgl: boolean;
+}): boolean {
+  if (input.choice === "quiet") return false;
+  if (!input.webgl) return false;
+  if (input.choice === "full") return true;
+  if (input.reducedMotion || input.saveData) return false;
+  return true;
 }
 
 export interface Shot {

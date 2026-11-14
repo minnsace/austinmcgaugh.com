@@ -140,6 +140,12 @@ Fog is analytic, not a volume, so mobile can drop it. The composer is selective 
 - The old copy, socials, email, and portrait stay. Project facts come from the Steam page, freesnakegame.com, and minnsace.com. Missing facts stay missing.
 - The only email on this site is contact@austinmcgaugh.com, including where the studio is mentioned. The personal LinkedIn is https://www.linkedin.com/in/austinmcgaugh/. A company LinkedIn URL is not linked until it can be verified.
 - `/writing/`, `/knowledge/`, and `/work/` redirect, rather than disappearing. Post and tag URLs under `/writing/` and `/knowledge/` redirect to the same path under `/journal/`.
+
+## The stage
+
+Phase 2 mounts the Three.js scene in `#forge-stage` after the page has painted. The poster stays until the Forge mesh is ready, and it stays up in quiet mode. Three copies of Island_01 float around the Forge. Each one carries one portal: Projects, Journal (the violet book, from `Portal_Knowledge`), and Workshop. Bridges between the islands are not in this phase.
+
+The quality tiers are quiet, standard for phones, high for desktop, and quest for an immersive session. High uses bloom with a high threshold so the portal membranes do not blow out. Quest skips the composer, turns transmission off, keeps foveation at full, and adds a few additive halos. Enter VR is shown only when the browser can start `immersive-vr`. In the headset, travel is a blink and a portal select opens that page. The cinematic drift stays on the flat desktop view.
 - HTTPS enforcement is a GitHub Pages setting. The certificate is already there. Austin turns the setting on. The repository cannot.
 
 ## What not to add
