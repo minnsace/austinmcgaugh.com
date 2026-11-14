@@ -6,7 +6,7 @@ permalink: /writing/
 ---
 <section class="page-hero section-wrap writing-page-hero">
   <h1>Writing</h1>
-  <p class="page-intro">Articles and notes on software engineering and game development.</p>
+  <p class="page-intro">Articles and notes by Austin McGaugh.</p>
 </section>
 
 <section class="section-wrap post-list-section">
