@@ -85,10 +85,15 @@ test("bridges meet the dais and the island deck", () => {
 });
 
 test("the visitor stands at eye level and routes name a stance", () => {
-  assert.ok(Math.abs(plazaStance().position.y - (FORGE_TREAD_Y + EYE_HEIGHT)) < 0.001);
+  const plaza = plazaStance();
+  assert.ok(Math.abs(plaza.position.y - EYE_HEIGHT) < 0.001);
+  const ring = Math.hypot(plaza.position.x, plaza.position.z);
+  assert.ok(ring > 8 && ring < 17);
   const journal = portalStance(1);
-  const place = islandPlacement(1);
-  assert.ok(Math.abs(journal.position.y - (place.y + EYE_HEIGHT)) < 0.001);
+  assert.ok(Math.abs(journal.position.y - (1 + EYE_HEIGHT)) < 0.001);
+  const portalReach = Math.hypot(40.729, -23.515);
+  const standReach = Math.hypot(journal.position.x, journal.position.z);
+  assert.ok(standReach < portalReach);
   const ahead = panelAnchor(journal, 2, 0);
   const gaze = Math.hypot(journal.look.x - journal.position.x, journal.look.z - journal.position.z);
   const panel = Math.hypot(ahead.x - journal.position.x, ahead.z - journal.position.z);

@@ -8,7 +8,7 @@ import {
   CylinderGeometry,
   EquirectangularReflectionMapping,
   Euler,
-  FogExp2,
+  Fog,
   Group,
   HemisphereLight,
   LinearMipmapLinearFilter,
@@ -45,13 +45,10 @@ import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js"
 import { XRControllerModelFactory } from "three/addons/webxr/XRControllerModelFactory.js";
 import { XRHandModelFactory } from "three/addons/webxr/XRHandModelFactory.js";
 import type { QualityTier } from "./index.ts";
+import { HUB_INSTANCES, type HubInstance } from "./hub.ts";
 import {
-  bridgeRun,
-  crystalSpots,
-  islandPlacement,
   panelAnchor,
   plazaStance,
-  PORTAL_LOCAL,
   smoothstep,
   stanceFor,
   type Stance,
@@ -78,6 +75,7 @@ export interface StageAssets {
   island: string;
   env: string;
   portals: PortalSpec[];
+  pieces?: KitPiece[];
   bridges?: KitPiece[];
   crystals?: KitPiece[];
   dracoPath?: string;
@@ -151,11 +149,11 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
 
   const scene = new Scene();
   scene.background = makeSky();
-  scene.fog = new FogExp2(0x160c22, 0.015);
+  scene.fog = new Fog(0x160c22, 35, 1700);
   scene.add(new HemisphereLight(0xb7c4de, 0x2a1420, 0.55));
   scene.add(new AmbientLight(0xffffff, 0.18));
 
-  const camera = new PerspectiveCamera(60, 1, 0.08, 400);
+  const camera = new PerspectiveCamera(60, 1, 0.08, 4000);
   const rig = new PerspectiveCamera();
   const stancePos = new Vector3();
   const stanceQuat = new Quaternion();
@@ -262,10 +260,13 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
 
   const glassSlots = makeGlass(scene, options.panels ?? []);
   const edgeMaterials = new Set<MeshStandardMaterial>();
-  const bridgeTemplates = new Map<string, Group>();
-  const crystalTemplates = new Map<string, Group>();
-  const islandGroups: Group[] = [];
-  let bridgesPlaced = false;
+  const templates = new Map<string, Group>();
+  const placedHub = new Set<string>();
+  const debrisMotion: { node: Object3D; baseY: number; phase: number; spin: number }[] = [];
+  const distanceCull: { node: Object3D; limit: number }[] = [];
+  const sharedMaterials = new Map<string, MeshStandardMaterial | MeshBasicMaterial>();
+  const distantSilhouette = new MeshBasicMaterial({ color: 0x241833 });
+  const questTier = options.tier === "quest";
 
   try {
     renderer.render(scene, camera);
@@ -287,8 +288,6 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
   loader.setMeshoptDecoder(MeshoptDecoder);
 
   const hdrLoader = new HDRLoader();
-  const loadedPortals = new Map<string, Group>();
-  let islandTemplate: Group | null = null;
 
   void hdrLoader.loadAsync(options.assets.env).then((hdr) => {
     if (disposed) return;
@@ -297,55 +296,16 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     scene.environment = hdr;
   }).catch(() => undefined);
 
-  void loader.loadAsync(options.assets.forge).then((gltf) => {
-    if (disposed) return;
-    const forge = gltf.scene;
-    tuneMaterials(forge, options.tier, "");
-    sharpenTextures(forge, maxAniso);
-    collectForge(forge);
-    energy.push(...emissiveMaterials(forge));
-    scene.add(forge);
-    canvas.classList.add("is-ready");
-    host.dataset.ready = "true";
-    host.dataset.quality = options.tier;
-  }).catch(() => undefined);
-
-  void loader.loadAsync(options.assets.island).then((gltf) => {
-    if (disposed) return;
-    tuneMaterials(gltf.scene, options.tier, "");
-    sharpenTextures(gltf.scene, maxAniso);
-    islandTemplate = gltf.scene;
-    assemble();
-  }).catch(() => undefined);
-
-  for (const spec of options.assets.portals) {
-    void loader.loadAsync(spec.file).then((gltf) => {
-      if (disposed) return;
-      tuneMaterials(gltf.scene, options.tier, spec.nodePrefix);
-      sharpenTextures(gltf.scene, maxAniso);
-      gltf.scene.userData.spec = spec;
-      loadedPortals.set(spec.id, gltf.scene);
-      assemble();
-    }).catch(() => undefined);
-  }
-
-  for (const piece of options.assets.bridges ?? []) {
+  const catalog = options.assets.pieces ?? [];
+  for (const piece of catalog) {
     void loader.loadAsync(piece.file).then((gltf) => {
       if (disposed) return;
-      tuneMaterials(gltf.scene, options.tier, "");
-      sharpenTextures(gltf.scene, maxAniso);
-      bridgeTemplates.set(piece.id, gltf.scene);
-      placeBridges();
-    }).catch(() => undefined);
-  }
-
-  for (const piece of options.assets.crystals ?? []) {
-    void loader.loadAsync(piece.file).then((gltf) => {
-      if (disposed) return;
-      tuneMaterials(gltf.scene, options.tier, "");
-      sharpenTextures(gltf.scene, maxAniso);
-      crystalTemplates.set(piece.id, gltf.scene);
-      dressCrystals();
+      const root = gltf.scene;
+      tuneMaterials(root, options.tier, piece.id);
+      sharpenTextures(root, maxAniso);
+      if (questTier) shareMaterials(root);
+      templates.set(piece.id, root);
+      placeHub();
     }).catch(() => undefined);
   }
 
@@ -448,6 +408,7 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     fade += (fadeTarget - fade) * Math.min(1, dt * 14);
     fadeMaterial.opacity = fade;
     animate(now, dt);
+    if (questTier) cullByDistance();
     if (!presenting) updateLook(dt);
     else {
       updateHands();
@@ -466,27 +427,36 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     }
   });
 
-  function assemble() {
-    if (!islandTemplate) return;
-    for (const spec of options.assets.portals) {
-      if (portalRoots.some((root) => root.userData.spec?.id === spec.id)) continue;
-      const portal = loadedPortals.get(spec.id);
-      if (!portal) continue;
-      const index = options.assets.portals.indexOf(spec);
-      const place = islandPlacement(index, options.assets.portals.length);
-      const island = islandTemplate.clone(true);
-      island.position.set(place.x, place.y, place.z);
-      island.rotation.y = place.rotationY;
-      island.scale.setScalar(place.scale);
-      collectIsland(island, index);
-      portal.position.set(PORTAL_LOCAL.x, PORTAL_LOCAL.y, PORTAL_LOCAL.z);
-      portal.userData.spec = spec;
-      collectPortal(portal, spec);
-      island.add(portal);
-      island.userData.index = index;
-      scene.add(island);
-      islandGroups.push(island);
-      portalRoots.push(portal);
+  function placeHub() {
+    for (const instance of HUB_INSTANCES) {
+      if (placedHub.has(instance.id)) continue;
+      const template = templates.get(instance.asset);
+      if (!template) continue;
+      const node = template.clone(true);
+      node.position.set(instance.x, instance.y, instance.z);
+      node.rotation.y = instance.yaw;
+      node.frustumCulled = true;
+      scene.add(node);
+      placedHub.add(instance.id);
+      dressHub(instance, node);
+    }
+  }
+
+  function dressHub(instance: HubInstance, node: Group) {
+    if (instance.asset === "Forge_Asset") {
+      collectForge(node);
+      energy.push(...emissiveMaterials(node));
+      canvas.classList.add("is-ready");
+      host.dataset.ready = "true";
+      host.dataset.quality = options.tier;
+      return;
+    }
+    if (instance.asset.startsWith("Portal_")) {
+      const spec = options.assets.portals.find((item) => item.nodePrefix === instance.asset);
+      if (!spec) return;
+      node.userData.spec = spec;
+      collectPortal(node, spec);
+      portalRoots.push(node);
       const halo = new Sprite(new SpriteMaterial({
         color: spec.color,
         transparent: true,
@@ -497,10 +467,66 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       halo.scale.set(1.6, 1.6, 1);
       halo.visible = false;
       halo.position.set(0, 4, 1.55);
-      portal.add(halo);
+      node.add(halo);
       halos.push(halo);
+      return;
     }
-    dressCrystals();
+    if (instance.asset.startsWith("Island_")) {
+      collectIsland(node, instance.asset.length);
+      return;
+    }
+    if (instance.asset.startsWith("Bridge_")) {
+      dressBridge(node);
+      return;
+    }
+    if (instance.asset.startsWith("Debris_")) {
+      debrisMotion.push({
+        node,
+        baseY: node.position.y,
+        phase: debrisMotion.length * 0.7,
+        spin: 0.15 + (debrisMotion.length % 5) * 0.05,
+      });
+      if (questTier) distanceCull.push({ node, limit: 85 });
+      return;
+    }
+    if (instance.asset.startsWith("Distant_")) {
+      if (questTier) useDistantSilhouette(node);
+    }
+  }
+
+  function cullByDistance() {
+    for (const item of distanceCull) {
+      item.node.visible = camera.position.distanceTo(item.node.position) < item.limit;
+    }
+  }
+
+  function shareMaterials(root: Object3D) {
+    root.traverse((node) => {
+      const mesh = node as Mesh;
+      if (!mesh.isMesh || !mesh.material) return;
+      const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const next = list.map((material) => {
+        if (!material?.name) return material;
+        const existing = sharedMaterials.get(material.name);
+        if (existing) return existing;
+        sharedMaterials.set(material.name, material);
+        return material;
+      });
+      mesh.material = Array.isArray(mesh.material) ? next : next[0];
+    });
+  }
+
+  function useDistantSilhouette(root: Object3D) {
+    root.traverse((node) => {
+      const mesh = node as Mesh;
+      if (!mesh.isMesh || !mesh.material) return;
+      const list = Array.isArray(mesh.material) ? mesh.material : [mesh.material];
+      const next = list.map((material) => (
+        material?.name?.includes("Silhouette") ? distantSilhouette : material
+      ));
+      mesh.material = Array.isArray(mesh.material) ? next : next[0];
+      mesh.frustumCulled = true;
+    });
   }
 
   function animate(time: number, dt: number) {
@@ -510,6 +536,10 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
     for (const group of spinGroups) group.rotation.y += dt * 0.18;
     for (const bob of bobs) {
       bob.node.position.y = bob.baseY + Math.sin(time * 1.3 + bob.phase) * 0.07;
+    }
+    for (const debris of debrisMotion) {
+      debris.node.rotation.y += dt * debris.spin;
+      debris.node.position.y = debris.baseY + Math.sin(time * 0.65 + debris.phase) * 0.45;
     }
     const pulse = 0.82 + Math.sin(time * 1.7) * 0.18;
     for (const material of energy) {
@@ -521,26 +551,6 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       const base = (material.userData.baseIntensity as number) || 1;
       material.emissiveIntensity = base * edgePulse;
       if (material.emissiveMap) material.emissiveMap.offset.y = (time * 0.12) % 1;
-    }
-  }
-
-  function placeBridges() {
-    if (bridgesPlaced) return;
-    for (const piece of options.assets.bridges ?? []) {
-      if (!bridgeTemplates.has(piece.id)) return;
-    }
-    if (!options.assets.bridges?.length) return;
-    bridgesPlaced = true;
-    for (let index = 0; index < options.assets.portals.length; index += 1) {
-      for (const placed of bridgeRun(index)) {
-        const template = bridgeTemplates.get(placed.id);
-        if (!template) continue;
-        const node = template.clone(true);
-        node.position.set(placed.pose.x, placed.pose.y, placed.pose.z);
-        node.rotation.y = placed.pose.yaw;
-        scene.add(node);
-        dressBridge(node);
-      }
     }
   }
 
@@ -564,26 +574,6 @@ export async function startStage(host: HTMLElement, options: StageOptions): Prom
       }
     });
     energy.push(...emissiveMaterials(root));
-  }
-
-  function dressCrystals() {
-    for (const island of islandGroups) {
-      if (island.userData.dressed) continue;
-      const index = island.userData.index as number;
-      const spots = crystalSpots(index);
-      if (spots.some((spot) => !crystalTemplates.has(spot.id))) continue;
-      for (const spot of spots) {
-        const template = crystalTemplates.get(spot.id);
-        if (!template) continue;
-        const cluster = template.clone(true);
-        cluster.position.set(spot.x, spot.y, spot.z);
-        cluster.rotation.y = spot.yaw;
-        island.add(cluster);
-        const cores = cluster.getObjectByName(`${spot.id}_Cores`);
-        if (cores) energy.push(...emissiveMaterials(cores));
-      }
-      island.userData.dressed = true;
-    }
   }
 
   function motionReduced() {

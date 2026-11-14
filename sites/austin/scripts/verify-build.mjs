@@ -250,6 +250,12 @@ check(existsSync(join(dist, "favicon.svg")) && existsSync(join(dist, "favicon.ic
 for (const asset of [
   "models/Forge_Asset01_web.glb",
   "models/Island_01_web.glb",
+  "models/Island_02_web.glb",
+  "models/Island_03_web.glb",
+  "models/Island_Central_web.glb",
+  "models/Debris_01_web.glb",
+  "models/Distant_01_web.glb",
+  "models/Bridge_Straight_2m_web.glb",
   "models/Forge_Env_Nebula.hdr",
   "models/Portal_Projects_web.glb",
   "models/Portal_Knowledge_web.glb",
@@ -261,7 +267,9 @@ for (const asset of [
   "models/Crystals_01_web.glb",
   "models/Crystals_05_web.glb",
   "models/quest/Bridge_Landing_quest.glb",
-  "models/quest/Crystals_01_quest.glb",
+  "models/quest/Island_Central_quest.glb",
+  "models/quest/Island_02_quest.glb",
+  "models/quest/Distant_01_quest.glb",
   "draco/draco_decoder.wasm",
   "basis/basis_transcoder.wasm",
 ]) {

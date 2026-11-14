@@ -179,24 +179,34 @@ export function kitFile(id: string, quest: boolean): string {
   return quest ? `/models/quest/${id}_quest.glb` : `/models/${id}_web.glb`;
 }
 
+/** Portal poses from Hub_Layout.json, three.js Y-up. Deck height is the island's y. */
+const HUB_PORTALS = [
+  { id: "projects", x: 0, y: 0.46, z: 45.181, deckY: 0 },
+  { id: "journal", x: 40.729, y: 1.46, z: -23.515, deckY: 1 },
+  { id: "workshop", x: -35.841, y: 0.46, z: -20.693, deckY: 0 },
+] as const;
+
 export function plazaStance(): Stance {
-  // Just off the dais on the open side, so the helix is the thing in front of you.
+  // On the central deck ring, looking through the Forge toward the Projects bridge.
   return {
     id: "plaza",
-    position: { x: 1.35, y: FORGE_TREAD_Y + EYE_HEIGHT, z: 7.6 },
-    look: { x: -0.2, y: 5.4, z: -4.5 },
+    position: { x: 1.4, y: EYE_HEIGHT, z: -11.2 },
+    look: { x: 0, y: 5.6, z: 14 },
   };
 }
 
 export function portalStance(index: number): Stance {
-  const place = islandPlacement(index);
-  const ids = ["projects", "journal", "workshop"];
-  const position = islandLocalToWorld(place, { x: 0.35, y: 0, z: 4.15 }, false);
-  const look = islandLocalToWorld(place, { x: 0, y: 0, z: PORTAL_LOCAL.z }, false);
+  const portal = HUB_PORTALS[index] ?? HUB_PORTALS[0];
+  const reach = Math.hypot(portal.x, portal.z) || 1;
+  const stand = 6.4;
   return {
-    id: ids[index] ?? `island-${index}`,
-    position: { x: position.x, y: place.y + EYE_HEIGHT, z: position.z },
-    look: { x: look.x, y: place.y + 2.05, z: look.z },
+    id: portal.id,
+    position: {
+      x: portal.x - (portal.x / reach) * stand,
+      y: portal.deckY + EYE_HEIGHT,
+      z: portal.z - (portal.z / reach) * stand,
+    },
+    look: { x: portal.x, y: portal.deckY + 2.15, z: portal.z },
   };
 }
 

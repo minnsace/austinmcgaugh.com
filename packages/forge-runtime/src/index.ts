@@ -155,6 +155,8 @@ export interface ForgeRuntime {
   setQuality(signals?: QualitySignals): QualityTier;
 }
 
+export { HUB_ASSETS, HUB_INSTANCES } from "./hub.ts";
+
 export {
   BRIDGE_IDS,
   CRYSTAL_IDS,

@@ -1,7 +1,6 @@
 import {
-  BRIDGE_IDS,
-  CRYSTAL_IDS,
   FORGE_STAGE_ID,
+  HUB_ASSETS,
   isReadingPath,
   kitFile,
   readForgeChoice,
@@ -112,8 +111,7 @@ export function bootForge() {
           island: "/models/Island_01_web.glb",
           env: "/models/Forge_Env_Nebula.hdr",
           portals,
-          bridges: BRIDGE_IDS.map((id) => ({ id, file: kitFile(id, quest) })),
-          crystals: CRYSTAL_IDS.map((id) => ({ id, file: kitFile(id, quest) })),
+          pieces: HUB_ASSETS.map((id) => ({ id, file: hubFile(id, quest) })),
         },
       });
       world.attach(handle);
@@ -174,6 +172,12 @@ export function bootForge() {
 
 interface NetworkInformation {
   saveData?: boolean;
+}
+
+function hubFile(asset: string, quest: boolean) {
+  if (asset === "Forge_Asset") return "/models/Forge_Asset01_web.glb";
+  if (asset.startsWith("Portal_")) return `/models/${asset}_web.glb`;
+  return kitFile(asset, quest);
 }
 
 function probeWebGL(): boolean {
