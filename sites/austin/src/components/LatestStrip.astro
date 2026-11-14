@@ -1,0 +1,100 @@
+---
+import type { CollectionEntry } from "astro:content";
+import type { AccentName } from "@digital-forge/ui/types";
+import { formatDate } from "../lib/content";
+
+interface Props {
+  article?: CollectionEntry<"knowledge">;
+  video?: CollectionEntry<"knowledge">;
+  project?: CollectionEntry<"projects">;
+  update?: CollectionEntry<"workshop">;
+}
+
+const { article, video, project, update } = Astro.props;
+
+const projectTime = project?.data.date?.getTime() ?? 0;
+const updateTime = update?.data.date?.getTime() ?? 0;
+const workshopWins = Boolean(update) && updateTime >= projectTime;
+
+const cards: Array<{
+  href: string;
+  kicker: string;
+  title: string;
+  description: string;
+  date?: Date;
+  tone: AccentName;
+}> = [
+  article
+    ? {
+        href: `/knowledge/${article.id}/`,
+        kicker: "Latest article",
+        title: article.data.title,
+        description: article.data.description,
+        date: article.data.date,
+        tone: "violet",
+      }
+    : {
+        href: "/knowledge/",
+        kicker: "Latest article",
+        title: "Nothing published yet",
+        description: "Articles will show up here.",
+        tone: "violet",
+      },
+  video
+    ? {
+        href: `/knowledge/${video.id}/`,
+        kicker: "Latest video",
+        title: video.data.title,
+        description: video.data.description,
+        date: video.data.date,
+        tone: "violet",
+      }
+    : {
+        href: "/knowledge/",
+        kicker: "Latest video",
+        title: "Nothing published yet",
+        description: "Videos will show up here.",
+        tone: "violet",
+      },
+  workshopWins && update
+    ? {
+        href: `/workshop/${update.id}/`,
+        kicker: "Latest from the workshop",
+        title: update.data.title,
+        description: update.data.description,
+        date: update.data.date,
+        tone: "amber",
+      }
+    : project
+      ? {
+          href: `/projects/${project.id}/`,
+          kicker: "Latest project",
+          title: project.data.title,
+          description: project.data.description,
+          date: project.data.date,
+          tone: "electric",
+        }
+      : {
+          href: "/projects/",
+          kicker: "Latest project",
+          title: "Nothing published yet",
+          description: "Projects and workshop notes will show up here.",
+          tone: "electric",
+        },
+];
+---
+
+<ul class="latest-grid">
+  {
+    cards.map((card) => (
+      <li>
+        <a class="latest-card" href={card.href} style={`--mark: var(--color-${card.tone})`}>
+          <p class="kicker">{card.kicker}</p>
+          <h3>{card.title}</h3>
+          <p>{card.description}</p>
+          {card.date && <time datetime={card.date.toISOString()}>{formatDate(card.date)}</time>}
+        </a>
+      </li>
+    ))
+  }
+</ul>

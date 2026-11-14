@@ -1,0 +1,47 @@
+---
+import type { CollectionEntry } from "astro:content";
+import { formatDate } from "../lib/content";
+
+interface Props {
+  project: CollectionEntry<"projects">;
+}
+
+const { project } = Astro.props;
+---
+
+<dl class="meta-list">
+  <div>
+    <dt>Status</dt>
+    <dd>{project.data.status}</dd>
+  </div>
+  <div>
+    <dt>Kind</dt>
+    <dd>{project.data.kind}</dd>
+  </div>
+  {
+    project.data.date && (
+      <div>
+        <dt>Released</dt>
+        <dd>
+          <time datetime={project.data.date.toISOString()}>{formatDate(project.data.date)}</time>
+        </dd>
+      </div>
+    )
+  }
+  {
+    project.data.platform && (
+      <div>
+        <dt>Platform</dt>
+        <dd>{project.data.platform}</dd>
+      </div>
+    )
+  }
+  {
+    project.data.price && (
+      <div>
+        <dt>Price</dt>
+        <dd>{project.data.price}</dd>
+      </div>
+    )
+  }
+</dl>

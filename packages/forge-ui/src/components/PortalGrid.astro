@@ -1,0 +1,24 @@
+---
+import type { Portal } from "../types";
+import Symbol from "./Symbol.astro";
+
+interface Props {
+  portals: Portal[];
+}
+
+const { portals } = Astro.props;
+---
+
+<ul class="portal-grid">
+  {
+    portals.map((portal) => (
+      <li>
+        <a class="portal-card" href={portal.href} style={`--mark: var(--color-${portal.color})`}>
+          <Symbol name={portal.symbol} size={28} />
+          <h3>{portal.label}</h3>
+          <p>{portal.summary}</p>
+        </a>
+      </li>
+    ))
+  }
+</ul>

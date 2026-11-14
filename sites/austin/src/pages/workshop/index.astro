@@ -1,0 +1,67 @@
+---
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import PageHeader from "../../components/PageHeader.astro";
+import { formatDate, loadWorkshop } from "../../lib/content";
+import { brand } from "../../brand/manifest";
+import Base from "../../layouts/Base.astro";
+
+const updates = await loadWorkshop();
+const description = "Minnsace Inc., the independent game studio founded by Austin McGaugh.";
+---
+
+<Base title="Workshop" description={description} current="workshop">
+  <ContentPanel variant="hero">
+    <PageHeader kicker={brand.organization.name} title="Workshop" intro="Minnsace Inc. is my company. I build software and games." symbol="anvil" tone="amber" />
+  </ContentPanel>
+  <ContentPanel>
+    <div class="prose">
+      <h2>The studio</h2>
+      <p>
+        <a href={brand.organization.url}>{brand.organization.name}</a> is an independent game studio. I founded it. The released game,
+        <a href="/projects/deadlight-tavern/">Deadlight Tavern</a>, is available free on Steam.
+      </p>
+      <p>
+        <a href="/projects/free-snake-game/">FreeSnakeGame.com</a> is one of my projects.
+      </p>
+      <p>
+        Studio email: <a href={`mailto:${brand.organization.email}`}>{brand.organization.email}</a>.
+        For questions about software, games, or other work, email <a href={`mailto:${brand.email}`}>{brand.email}</a>.
+      </p>
+      {
+        brand.organization.sameAs?.map((href) => (
+          <p>
+            <a href={href} rel="noopener noreferrer" target="_blank">
+              Minnsace on LinkedIn
+              <span class="visually-hidden"> (opens in a new tab)</span>
+            </a>
+          </p>
+        ))
+      }
+    </div>
+  </ContentPanel>
+  <ContentPanel>
+    <h2>Now</h2>
+    {
+      updates.length === 0 ? (
+        <div class="empty">
+          <p>No progress notes yet.</p>
+        </div>
+      ) : (
+        <ol class="feed">
+          {updates.map((update) => (
+            <li>
+              <a class="feed-card" href={`/workshop/${update.id}/`} style="--mark: var(--color-amber)">
+                <span class="badge-row">
+                  {update.data.draft && <span class="draft-badge">Draft</span>}
+                  <time datetime={update.data.date.toISOString()}>{formatDate(update.data.date)}</time>
+                </span>
+                <h2>{update.data.title}</h2>
+                <p>{update.data.description}</p>
+              </a>
+            </li>
+          ))}
+        </ol>
+      )
+    }
+  </ContentPanel>
+</Base>

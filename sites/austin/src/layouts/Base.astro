@@ -1,0 +1,74 @@
+---
+import { getImage } from "astro:assets";
+import { FORGE_STAGE_ID, resolveQuality } from "@digital-forge/runtime";
+import SiteFooter from "@digital-forge/ui/SiteFooter.astro";
+import SiteHeader from "@digital-forge/ui/SiteHeader.astro";
+import SkipLink from "@digital-forge/ui/SkipLink.astro";
+import portrait from "../assets/austin-mcgaugh.png";
+import poster from "../assets/color-orbit.jpg";
+import { brand } from "../brand/manifest";
+import Seo from "../components/Seo.astro";
+import { absoluteUrl, brandStyle } from "../lib/urls";
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  current?: string;
+  image?: string;
+  ogType?: "website" | "article";
+  published?: Date;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description = brand.description,
+  current,
+  image,
+  ogType,
+  published,
+  noindex,
+  jsonLd,
+} = Astro.props;
+
+const quality = resolveQuality({ force: "quiet" });
+const portraitImage = await getImage({ src: portrait, width: 800, format: "webp", quality: 72 });
+const posterAvif = await getImage({ src: poster, format: "avif", width: 960, quality: 32 });
+const posterWebp = await getImage({ src: poster, format: "webp", width: 960, quality: 42 });
+const posterJpeg = await getImage({ src: poster, format: "jpeg", width: 960, quality: 46 });
+const canonical = absoluteUrl(Astro.url.pathname === "/404/" ? "/404.html" : Astro.url.pathname);
+const year = new Date().getUTCFullYear();
+---
+
+<html lang="en" style={brandStyle()}>
+  <head>
+    <Seo
+      title={title}
+      description={description}
+      canonical={canonical}
+      portraitUrl={absoluteUrl(portraitImage.src)}
+      image={image}
+      ogType={ogType}
+      published={published}
+      noindex={noindex}
+      jsonLd={jsonLd}
+    />
+  </head>
+  <body>
+    <SkipLink />
+    <div id={FORGE_STAGE_ID} class="forge-stage" data-quality={quality} aria-hidden="true">
+      <picture>
+        <source srcset={posterAvif.src} type="image/avif" />
+        <source srcset={posterWebp.src} type="image/webp" />
+        <img src={posterJpeg.src} alt="" width="957" height="2000" />
+      </picture>
+    </div>
+    <SiteHeader brand={brand} current={current} />
+    <main id="main" class="shell site-main" tabindex="-1">
+      <slot />
+    </main>
+    <SiteFooter brand={brand} year={year} />
+  </body>
+</html>

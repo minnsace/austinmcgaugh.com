@@ -1,0 +1,33 @@
+---
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import PageHeader from "../../components/PageHeader.astro";
+import { formatDate, loadProjects } from "../../lib/content";
+import { projectListGraph } from "../../lib/jsonld";
+import Base from "../../layouts/Base.astro";
+
+const projects = await loadProjects();
+const description = "Software and games by Austin McGaugh.";
+---
+
+<Base title="Projects" description={description} current="projects" jsonLd={projectListGraph(projects)}>
+  <ContentPanel>
+    <PageHeader kicker="Work" title="Projects" intro={description} symbol="cube" tone="electric" />
+    <ol class="feed">
+      {
+        projects.map((project) => (
+          <li>
+            <a class="feed-card" href={`/projects/${project.id}/`} style="--mark: var(--color-electric)">
+              <span class="badge-row">
+                <span class="badge">{project.data.kind}</span>
+                <span class="badge">{project.data.status}</span>
+              </span>
+              <h2>{project.data.title}</h2>
+              <p>{project.data.description}</p>
+              {project.data.date && <time datetime={project.data.date.toISOString()}>{formatDate(project.data.date)}</time>}
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </ContentPanel>
+</Base>

@@ -1,0 +1,35 @@
+---
+import type { Brand } from "../types";
+import Symbol from "./Symbol.astro";
+
+interface Props {
+  brand: Brand;
+  current?: string;
+}
+
+const { brand, current } = Astro.props;
+---
+
+<header class="site-header">
+  <div class="shell site-header-bar">
+    <a class="wordmark" href="/">
+      <span class="wordmark-mark" aria-hidden="true"></span>
+      {brand.name}
+    </a>
+    <nav class="site-nav" aria-label="Main">
+      {
+        brand.portals.map((portal) => (
+          <a
+            class="nav-link"
+            href={portal.href}
+            style={`--mark: var(--color-${portal.color})`}
+            aria-current={current === portal.id ? "page" : undefined}
+          >
+            <Symbol name={portal.symbol} size={16} />
+            <span>{portal.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+  </div>
+</header>

@@ -1,0 +1,69 @@
+---
+import { brand } from "../brand/manifest";
+import { baseGraph } from "../lib/jsonld";
+import { absoluteUrl, pageTitle } from "../lib/urls";
+
+interface Props {
+  title?: string;
+  description: string;
+  canonical: string;
+  portraitUrl: string;
+  image?: string;
+  ogType?: "website" | "article";
+  published?: Date;
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description,
+  canonical,
+  portraitUrl,
+  image,
+  ogType = "website",
+  published,
+  noindex = false,
+  jsonLd = [],
+} = Astro.props;
+
+const fullTitle = pageTitle(title);
+const imageUrl = absoluteUrl(image ?? "/og.png");
+const x = brand.socials.find((social) => social.id === "x");
+const twitterSite = x ? `@${new URL(x.href).pathname.split("/").filter(Boolean)[0]}` : undefined;
+const graph = {
+  "@context": "https://schema.org",
+  "@graph": [...baseGraph(portraitUrl), ...jsonLd],
+};
+const json = JSON.stringify(graph).replace(/</g, "\\u003c");
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="theme-color" content={brand.colors.obsidian} />
+<meta name="color-scheme" content="dark" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta name="description" content={description} />
+<meta name="author" content={brand.name} />
+<meta name="robots" content={noindex ? "noindex" : "index, follow"} />
+<title>{fullTitle}</title>
+<link rel="canonical" href={canonical} />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+<link rel="icon" href="/favicon-32.png" type="image/png" sizes="32x32" />
+<link rel="alternate" type="application/rss+xml" title={`${brand.name} — Knowledge`} href="/knowledge/rss.xml" />
+<meta property="og:site_name" content={brand.name} />
+<meta property="og:locale" content="en_US" />
+<meta property="og:type" content={ogType} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={imageUrl} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+<meta name="twitter:image" content={imageUrl} />
+{twitterSite && <meta name="twitter:site" content={twitterSite} />}
+{published && <meta property="article:published_time" content={published.toISOString()} />}
+<script type="application/ld+json" set:html={json} />

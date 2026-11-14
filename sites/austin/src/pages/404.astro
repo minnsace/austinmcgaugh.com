@@ -1,0 +1,21 @@
+---
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import { brand } from "../brand/manifest";
+import Base from "../layouts/Base.astro";
+---
+
+<Base title="Page not found" description="That link does not match a page on this site." noindex>
+  <ContentPanel>
+    <h1>Page not found</h1>
+    <p class="lede">That link does not match a page on this site.</p>
+    <ul class="tag-list">
+      {
+        brand.portals.map((portal) => (
+          <li>
+            <a href={portal.href}>{portal.label}</a>
+          </li>
+        ))
+      }
+    </ul>
+  </ContentPanel>
+</Base>

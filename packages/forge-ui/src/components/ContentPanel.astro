@@ -1,0 +1,14 @@
+---
+interface Props {
+  as?: "div" | "section" | "article";
+  variant?: "default" | "hero";
+  class?: string;
+  labelledBy?: string;
+}
+
+const { as: Tag = "section", variant = "default", class: className, labelledBy } = Astro.props;
+---
+
+<Tag class:list={["panel", variant === "hero" && "panel-hero", className]} aria-labelledby={labelledBy}>
+  <slot />
+</Tag>

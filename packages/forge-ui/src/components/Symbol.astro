@@ -1,0 +1,48 @@
+---
+import type { SymbolName } from "../types";
+
+interface Props {
+  name: SymbolName;
+  size?: number;
+}
+
+const { name, size = 20 } = Astro.props;
+const shared = {
+  class: "symbol",
+  width: size,
+  height: size,
+  viewBox: "0 0 24 24",
+  fill: "none",
+  "aria-hidden": "true" as const,
+};
+---
+
+{
+  name === "cube" && (
+    <svg {...shared}>
+      <path d="M12 3.2 20.2 7.6 12 12 3.8 7.6 12 3.2Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M20.2 7.6V16.4L12 20.8V12" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M3.8 7.6V16.4L12 20.8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+    </svg>
+  )
+}
+{
+  name === "book" && (
+    <svg {...shared}>
+      <path d="M12 6.2c-1.8-1.15-4.1-1.6-7.3-1.25v12.7c3.2-.45 5.5 0 7.3 1.35" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M12 6.2c1.8-1.15 4.1-1.6 7.3-1.25v12.7c-3.2-.45-5.5 0-7.3 1.35" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+      <path d="M12 6.2v12.8" stroke="currentColor" stroke-width="1.6" />
+    </svg>
+  )
+}
+{
+  name === "anvil" && (
+    <svg {...shared}>
+      <path
+        fill="currentColor"
+        d="M2 9.2h12.2c2.3 0 4.1-1.2 5-2.8h2.3v2.1h-1.7c-.7 1.8-2.5 3-4.7 3H13l-1 2.1H8.2L7.2 11.5H4.2L2.4 9.2H2Z"
+      />
+      <path fill="currentColor" d="M7.6 14h8.8v2.2H7.6zM6 16.8h12v1.7H6zM4.8 19.1h14.4V21H4.8z" />
+    </svg>
+  )
+}

@@ -1,0 +1,31 @@
+import mdx from "@astrojs/mdx";
+import sitemap from "@astrojs/sitemap";
+import { defineConfig } from "astro/config";
+
+export default defineConfig({
+  site: "https://austinmcgaugh.com",
+  trailingSlash: "always",
+  compressHTML: true,
+  prefetch: false,
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) =>
+        !/\.(png|xml|svg|jpg|jpeg|webp|avif|ico)$/.test(page) &&
+        !/\/(404|work|writing|contact)(\/|\.html)?$/.test(page),
+    }),
+  ],
+  redirects: {
+    "/work/": "/projects/",
+    "/writing/": "/knowledge/",
+    "/contact/": "/about/#contact",
+  },
+  build: {
+    format: "directory",
+  },
+  vite: {
+    ssr: {
+      noExternal: ["@digital-forge/ui"],
+    },
+  },
+});

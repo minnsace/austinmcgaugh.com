@@ -1,0 +1,41 @@
+---
+import type { Brand } from "../types";
+
+interface Props {
+  brand: Brand;
+  year: number;
+}
+
+const { brand, year } = Astro.props;
+---
+
+<footer class="site-footer">
+  <div class="shell footer-grid">
+    <div>
+      <a class="footer-name" href="/">{brand.name}</a>
+      <p>{brand.tagline}</p>
+    </div>
+    <div>
+      <a class="email-link" href={`mailto:${brand.email}`}>{brand.email}</a>
+      <nav aria-label="Social profiles">
+        <ul class="social-list">
+          {
+            brand.socials.map((social) => (
+              <li>
+                <a href={social.href} rel="me noopener noreferrer" target="_blank">
+                  {social.label}
+                  <span class="visually-hidden"> (opens in a new tab)</span>
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </div>
+    <div class="footer-meta">
+      <a href="/about/">About</a>
+      <a href="/knowledge/rss.xml">RSS</a>
+      <p>© {year} {brand.name}</p>
+    </div>
+  </div>
+</footer>
