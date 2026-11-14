@@ -1,13 +1,12 @@
 ---
 layout: default
 title: Writing
-description: Notes and ideas from Austin McGaugh.
+description: Writing by Austin McGaugh.
 permalink: /writing/
 ---
 <section class="page-hero section-wrap writing-page-hero">
-  <p class="eyebrow">Notes & ideas / 02</p>
-  <h1>The writing desk.</h1>
-  <p class="page-intro">A place for thoughts in progress, lessons from making, and ideas worth working through.</p>
+  <h1>Writing</h1>
+  <p class="page-intro">Articles and notes on software engineering and game development.</p>
 </section>
 
 <section class="section-wrap post-list-section">
@@ -27,10 +26,8 @@ permalink: /writing/
     </div>
   {% else %}
     <div class="empty-writing">
-      <span class="empty-mark" aria-hidden="true">✳</span>
-      <p class="eyebrow">First note, when it’s ready</p>
-      <h2>No posts just yet.</h2>
-      <p>I’m keeping this space open for writing worth sharing. Check back soon.</p>
+      <h2>No posts yet.</h2>
+      <p>Published posts will appear here.</p>
     </div>
   {% endif %}
 </section>
