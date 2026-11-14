@@ -36,11 +36,11 @@ npm run preview   # serve sites/austin/dist
 
 Shared components read the manifest. They do not hard-code Austin’s name, colors, or links, so a second site can supply a different manifest later.
 
-## Add a knowledge post
+## Add a journal post
 
 Create one file, either Markdown or MDX:
 
-`sites/austin/src/content/knowledge/my-note.md`
+`sites/austin/src/content/journal/my-note.md`
 
 ```markdown
 ---
@@ -76,9 +76,7 @@ A short introduction. The player is a link until someone presses play, so the fi
 
 `video` accepts a YouTube or Vimeo URL. Anything else stays an ordinary link. `cover` is optional. Put the image in `sites/austin/public/images/` and it becomes the Open Graph image for that post.
 
-The feed is newest first, at `/knowledge/`, and includes articles and videos together. Tags get their own pages. RSS is `/knowledge/rss.xml`. `/feed.xml` is the same feed, kept so the old address still works.
-
-`src/content/knowledge/example-article.mdx` and `example-video.md` are drafts. Delete them when you no longer need the pattern.
+The feed is newest first, at `/journal/`, and includes articles and videos together. Tags get their own pages. RSS is `/journal/rss.xml`. `/feed.xml` is the same feed, kept so the old address still works. `/knowledge/` and `/writing/` redirect to `/journal/`, including each post and tag.
 
 ## Add a project
 

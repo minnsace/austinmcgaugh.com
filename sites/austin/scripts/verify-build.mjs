@@ -85,7 +85,8 @@ const pages = [
   "projects/index.html",
   "projects/deadlight-tavern/index.html",
   "projects/free-snake-game/index.html",
-  "knowledge/index.html",
+  "journal/index.html",
+  "journal/i-bought-a-5-domain-on-impulse/index.html",
   "workshop/index.html",
   "about/index.html",
   "404.html",
@@ -98,7 +99,8 @@ const current = {
   "projects/index.html": "/projects/",
   "projects/deadlight-tavern/index.html": "/projects/",
   "projects/free-snake-game/index.html": "/projects/",
-  "knowledge/index.html": "/knowledge/",
+  "journal/index.html": "/journal/",
+  "journal/i-bought-a-5-domain-on-impulse/index.html": "/journal/",
   "workshop/index.html": "/workshop/",
   "about/index.html": null,
   "404.html": null,
@@ -124,7 +126,7 @@ for (const page of pages) {
     href: anchor.getAttribute("href"),
     current: anchor.getAttribute("aria-current"),
   }));
-  check(nav.map((item) => item.text).join(",") === "Projects,Knowledge,Workshop", `${page} nav labels`);
+  check(nav.map((item) => item.text).join(",") === "Projects,Journal,Workshop", `${page} nav labels`);
   const marked = nav.filter((item) => item.current === "page");
   if (current[page]) {
     check(marked.length === 1 && marked[0].href === current[page], `${page} aria-current`);
@@ -162,7 +164,8 @@ for (const page of pages) {
 const home = htmlFiles.includes("index.html") ? read("index.html") : "";
 check(home.includes("I’m Austin McGaugh, founder of Minnsace Inc."), "Home hero copy");
 check(home.includes("Deadlight Tavern"), "Home latest project");
-check(home.includes("Nothing published yet"), "Home empty knowledge slots");
+check(home.includes("I Bought a $5 Domain on Impulse."), "Home shows the journal post");
+check(home.includes("Nothing published yet"), "Home still has an empty video slot");
 
 const deadlight = htmlFiles.includes("projects/deadlight-tavern/index.html") ? read("projects/deadlight-tavern/index.html") : "";
 check(deadlight.includes("July 18, 2022"), "Deadlight release date");
@@ -175,10 +178,21 @@ check(snake.includes("https://freesnakegame.com/"), "FreeSnake URL");
 check(snake.includes("https://github.com/minnsace/free-snake-game"), "FreeSnake repo");
 check(snake.includes("pygame-ce") && snake.includes("WebAssembly") && snake.includes("scent markers"), "FreeSnake story");
 check(snake.includes("GitHub Copilot") && snake.includes("GoDaddy"), "FreeSnake origin");
+check(snake.includes("/journal/i-bought-a-5-domain-on-impulse/"), "FreeSnake links the journal post");
 check(!/power-ups|voice chat|battery level|pygbag/i.test(snake), "FreeSnake page invented a feature");
 
-const knowledge = htmlFiles.includes("knowledge/index.html") ? read("knowledge/index.html") : "";
-check(knowledge.includes("No posts yet."), "Knowledge empty state");
+const journal = htmlFiles.includes("journal/index.html") ? read("journal/index.html") : "";
+check(journal.includes("I Bought a $5 Domain on Impulse."), "Journal lists the post");
+check(!journal.includes("No posts yet."), "Journal still shows the empty state");
+check(!journal.includes("Example article"), "Journal published a draft");
+const post = htmlFiles.includes("journal/i-bought-a-5-domain-on-impulse/index.html")
+  ? read("journal/i-bought-a-5-domain-on-impulse/index.html")
+  : "";
+check(post.includes("An infinite world, and a snake that can smell"), "Post heading");
+check(post.includes("November 14, 2026"), "Post date");
+check(post.includes("BlogPosting"), "Post JSON-LD");
+check(post.includes("https://freesnakegame.com"), "Post links the game");
+check(!post.includes("Example video") && !post.includes("REPLACE_ME"), "Draft video was published");
 
 const workshop = htmlFiles.includes("workshop/index.html") ? read("workshop/index.html") : "";
 check(workshop.includes("Minnsace Inc. is my company."), "Workshop carries the studio sentence");
@@ -205,7 +219,10 @@ for (const social of ["https://x.com/AustinMcGaugh", "https://www.linkedin.com/i
 
 for (const [file, target] of [
   ["work/index.html", "/projects/"],
-  ["writing/index.html", "/knowledge/"],
+  ["writing/index.html", "/journal/"],
+  ["knowledge/index.html", "/journal/"],
+  ["knowledge/i-bought-a-5-domain-on-impulse/index.html", "/journal/i-bought-a-5-domain-on-impulse/"],
+  ["writing/i-bought-a-5-domain-on-impulse/index.html", "/journal/i-bought-a-5-domain-on-impulse/"],
   ["contact/index.html", "/about/#contact"],
 ]) {
   check(htmlFiles.includes(file), `Missing redirect ${file}`);
@@ -221,11 +238,12 @@ function readDist(path) {
   return existsSync(file) ? readFileSync(file, "utf8") : "";
 }
 
-const feed = readDist("knowledge/rss.xml");
+const feed = readDist("journal/rss.xml");
 const legacy = readDist("feed.xml");
-check(feed.includes("<rss") && feed.includes("Knowledge"), "Knowledge RSS");
+check(feed.includes("<rss") && feed.includes("Journal"), "Journal RSS");
+check(feed.includes("I Bought a $5 Domain on Impulse."), "RSS includes the post");
 check(!feed.includes("Example article") && !feed.includes("REPLACE_ME"), "RSS includes a draft");
-check(legacy.includes("<rss"), "Legacy /feed.xml");
+check(legacy.includes("<rss") && legacy.includes("I Bought a $5 Domain on Impulse."), "Legacy /feed.xml");
 check(readDist("robots.txt").includes("https://austinmcgaugh.com/sitemap-index.xml"), "robots sitemap");
 check(readDist("CNAME").trim() === "austinmcgaugh.com", "CNAME");
 check(existsSync(join(dist, "favicon.svg")) && existsSync(join(dist, "favicon.ico")) && existsSync(join(dist, "og.png")), "Icons and social image");
@@ -237,13 +255,14 @@ for (const url of [
   "https://austinmcgaugh.com/projects/",
   "https://austinmcgaugh.com/projects/deadlight-tavern/",
   "https://austinmcgaugh.com/projects/free-snake-game/",
-  "https://austinmcgaugh.com/knowledge/",
+  "https://austinmcgaugh.com/journal/",
+  "https://austinmcgaugh.com/journal/i-bought-a-5-domain-on-impulse/",
   "https://austinmcgaugh.com/workshop/",
   "https://austinmcgaugh.com/about/",
 ]) {
   check(sitemap.includes(url), `Sitemap missing ${url}`);
 }
-check(!sitemap.includes("/work/") && !sitemap.includes("example-article"), "Sitemap includes a redirect or draft");
+check(!sitemap.includes("/work/") && !sitemap.includes("/knowledge/") && !sitemap.includes("example-article"), "Sitemap includes a redirect or draft");
 
 if (htmlFiles.includes("index.html")) {
   const { document } = parseHTML(read("index.html"));

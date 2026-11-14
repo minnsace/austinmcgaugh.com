@@ -41,7 +41,7 @@ export function baseGraph(portraitUrl: string): Record<string, unknown>[] {
   ];
 }
 
-export function articleGraph(post: CollectionEntry<"knowledge">, canonical: string): Record<string, unknown>[] {
+export function articleGraph(post: CollectionEntry<"journal">, canonical: string): Record<string, unknown>[] {
   const nodes: Record<string, unknown>[] = [
     {
       "@type": "BlogPosting",
@@ -53,14 +53,14 @@ export function articleGraph(post: CollectionEntry<"knowledge">, canonical: stri
       url: canonical,
       mainEntityOfPage: canonical,
       keywords: post.data.tags.join(", "),
-      articleSection: "Knowledge",
+      articleSection: "Journal",
       inLanguage: "en",
       author: { "@id": personId },
       publisher: { "@id": personId },
       image: post.data.cover ? absoluteUrl(post.data.cover) : undefined,
     },
     breadcrumb([
-      { name: "Knowledge", url: absoluteUrl("/knowledge/") },
+      { name: "Journal", url: absoluteUrl("/journal/") },
       { name: post.data.title, url: canonical },
     ]),
   ];

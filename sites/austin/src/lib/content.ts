@@ -8,8 +8,8 @@ function byDateDesc<T extends { data: { date?: Date } }>(a: T, b: T): number {
   return (b.data.date?.getTime() ?? 0) - (a.data.date?.getTime() ?? 0);
 }
 
-export async function loadKnowledge(): Promise<CollectionEntry<"knowledge">[]> {
-  const entries = await getCollection("knowledge");
+export async function loadJournal(): Promise<CollectionEntry<"journal">[]> {
+  const entries = await getCollection("journal");
   return entries.filter(isPublished).sort(byDateDesc);
 }
 
@@ -31,7 +31,7 @@ export function tagSlug(tag: string): string {
     .replace(/^-|-$/g, "");
 }
 
-export function knowledgeTags(posts: CollectionEntry<"knowledge">[]) {
+export function journalTags(posts: CollectionEntry<"journal">[]) {
   const tags = new Map<string, { slug: string; name: string; count: number }>();
   for (const post of posts) {
     for (const tag of post.data.tags) {

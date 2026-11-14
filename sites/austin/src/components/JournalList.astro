@@ -1,14 +1,14 @@
 ---
 import type { CollectionEntry } from "astro:content";
-import { formatDate, knowledgeTags } from "../lib/content";
+import { formatDate, journalTags } from "../lib/content";
 
 interface Props {
-  posts: CollectionEntry<"knowledge">[];
+  posts: CollectionEntry<"journal">[];
   activeTag?: string;
 }
 
 const { posts, activeTag } = Astro.props;
-const tags = knowledgeTags(posts);
+const tags = journalTags(posts);
 ---
 
 {
@@ -16,13 +16,13 @@ const tags = knowledgeTags(posts);
     <nav aria-label="Tags">
       <ul class="tag-list">
         <li>
-          <a href="/knowledge/" aria-current={activeTag ? undefined : "page"}>
+          <a href="/journal/" aria-current={activeTag ? undefined : "page"}>
             All
           </a>
         </li>
         {tags.map((tag) => (
           <li>
-            <a href={`/knowledge/tags/${tag.slug}/`} aria-current={activeTag === tag.slug ? "page" : undefined}>
+            <a href={`/journal/tags/${tag.slug}/`} aria-current={activeTag === tag.slug ? "page" : undefined}>
               {tag.name}
             </a>
           </li>
@@ -42,7 +42,7 @@ const tags = knowledgeTags(posts);
     <ol class="feed">
       {posts.map((post) => (
         <li>
-          <a class="feed-card" href={`/knowledge/${post.id}/`} style="--mark: var(--color-violet)">
+          <a class="feed-card" href={`/journal/${post.id}/`} style="--mark: var(--color-violet)">
             <span class="badge-row">
               <span class="badge">{post.data.type === "video" ? "Video" : "Article"}</span>
               {post.data.draft && <span class="draft-badge">Draft</span>}

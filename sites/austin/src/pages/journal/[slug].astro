@@ -1,0 +1,62 @@
+---
+import { getEntry, render } from "astro:content";
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import VideoFacade from "@digital-forge/ui/VideoFacade.astro";
+import DraftBanner from "../../components/DraftBanner.astro";
+import { formatDate, loadJournal, tagSlug } from "../../lib/content";
+import { articleGraph } from "../../lib/jsonld";
+import { absoluteUrl } from "../../lib/urls";
+import Base from "../../layouts/Base.astro";
+
+export async function getStaticPaths() {
+  const posts = await loadJournal();
+  return posts.map((post) => ({ params: { slug: post.id } }));
+}
+
+const { slug } = Astro.params;
+const post = slug ? await getEntry("journal", slug) : undefined;
+if (!post || (post.data.draft && import.meta.env.PROD)) {
+  throw new Error(`Missing journal post: ${slug}`);
+}
+
+const { Content } = await render(post);
+const canonical = absoluteUrl(`/journal/${post.id}/`);
+---
+
+<Base
+  title={post.data.title}
+  description={post.data.description}
+  current="journal"
+  image={post.data.cover}
+  ogType="article"
+  published={post.data.date}
+  jsonLd={articleGraph(post, canonical)}
+>
+  <ContentPanel>
+    {post.data.draft && <DraftBanner />}
+    <a class="back-link" href="/journal/">Journal</a>
+    <p class="kicker" style="--mark: var(--color-violet)">
+      {post.data.type === "video" ? "Video" : "Article"}
+    </p>
+    <h1>{post.data.title}</h1>
+    <div class="post-meta">
+      <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+      <span>Austin McGaugh</span>
+    </div>
+    {
+      post.data.tags.length > 0 && (
+        <ul class="tag-list">
+          {post.data.tags.map((tag) => (
+            <li>
+              <a href={`/journal/tags/${tagSlug(tag)}/`}>{tag}</a>
+            </li>
+          ))}
+        </ul>
+      )
+    }
+    {post.data.video && <VideoFacade url={post.data.video} title={post.data.title} />}
+    <div class="prose">
+      <Content />
+    </div>
+  </ContentPanel>
+</Base>

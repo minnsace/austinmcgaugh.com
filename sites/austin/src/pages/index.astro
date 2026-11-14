@@ -3,10 +3,10 @@ import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
 import PortalGrid from "@digital-forge/ui/PortalGrid.astro";
 import { brand } from "../brand/manifest";
 import LatestStrip from "../components/LatestStrip.astro";
-import { loadKnowledge, loadProjects, loadWorkshop } from "../lib/content";
+import { loadJournal, loadProjects, loadWorkshop } from "../lib/content";
 import Base from "../layouts/Base.astro";
 
-const posts = await loadKnowledge();
+const posts = await loadJournal();
 const projects = await loadProjects();
 const updates = await loadWorkshop();
 const datedProjects = projects.filter((project) => project.data.date);

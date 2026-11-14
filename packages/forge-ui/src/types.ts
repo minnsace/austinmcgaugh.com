@@ -48,6 +48,8 @@ export interface Brand {
   email: string;
   description: string;
   tagline: string;
+  /** RSS or Atom URL for this site's journal. */
+  feed: string;
   colors: BrandColors;
   portals: Portal[];
   socials: SocialLink[];

@@ -12,12 +12,17 @@ export default defineConfig({
     sitemap({
       filter: (page) =>
         !/\.(png|xml|svg|jpg|jpeg|webp|avif|ico)$/.test(page) &&
-        !/\/(404|work|writing|contact)(\/|\.html)?$/.test(page),
+        !/\/(404|work|writing|knowledge|contact)(\/|\.html)?$/.test(page) &&
+        !page.includes("/writing/") &&
+        !page.includes("/knowledge/"),
     }),
   ],
   redirects: {
     "/work/": "/projects/",
-    "/writing/": "/knowledge/",
+    "/writing/": "/journal/",
+    "/knowledge/": "/journal/",
+    "/knowledge/rss.xml": "/journal/rss.xml",
+    "/writing/rss.xml": "/journal/rss.xml",
     "/contact/": "/about/#contact",
   },
   build: {

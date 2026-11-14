@@ -1,62 +1,11 @@
 ---
-import { getEntry, render } from "astro:content";
-import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
-import VideoFacade from "@digital-forge/ui/VideoFacade.astro";
-import DraftBanner from "../../components/DraftBanner.astro";
-import { formatDate, loadKnowledge, tagSlug } from "../../lib/content";
-import { articleGraph } from "../../lib/jsonld";
-import { absoluteUrl } from "../../lib/urls";
-import Base from "../../layouts/Base.astro";
+import { loadJournal } from "../../lib/content";
 
 export async function getStaticPaths() {
-  const posts = await loadKnowledge();
+  const posts = await loadJournal();
   return posts.map((post) => ({ params: { slug: post.id } }));
 }
 
 const { slug } = Astro.params;
-const post = slug ? await getEntry("knowledge", slug) : undefined;
-if (!post || (post.data.draft && import.meta.env.PROD)) {
-  throw new Error(`Missing knowledge post: ${slug}`);
-}
-
-const { Content } = await render(post);
-const canonical = absoluteUrl(`/knowledge/${post.id}/`);
+return Astro.redirect(`/journal/${slug}/`);
 ---
-
-<Base
-  title={post.data.title}
-  description={post.data.description}
-  current="knowledge"
-  image={post.data.cover}
-  ogType="article"
-  published={post.data.date}
-  jsonLd={articleGraph(post, canonical)}
->
-  <ContentPanel>
-    {post.data.draft && <DraftBanner />}
-    <a class="back-link" href="/knowledge/">All knowledge</a>
-    <p class="kicker" style="--mark: var(--color-violet)">
-      {post.data.type === "video" ? "Video" : "Article"}
-    </p>
-    <h1>{post.data.title}</h1>
-    <div class="post-meta">
-      <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
-      <span>Austin McGaugh</span>
-    </div>
-    {
-      post.data.tags.length > 0 && (
-        <ul class="tag-list">
-          {post.data.tags.map((tag) => (
-            <li>
-              <a href={`/knowledge/tags/${tagSlug(tag)}/`}>{tag}</a>
-            </li>
-          ))}
-        </ul>
-      )
-    }
-    {post.data.video && <VideoFacade url={post.data.video} title={post.data.title} />}
-    <div class="prose">
-      <Content />
-    </div>
-  </ContentPanel>
-</Base>

@@ -19,6 +19,8 @@ I also wanted it to work properly on phones, not just load technically. On mobil
 
 It's built in Python with pygame-ce, runs in the browser through WebAssembly, and is hosted on GitHub Pages. The source is on [GitHub](https://github.com/minnsace/free-snake-game).
 
+I wrote the whole story in the journal: [I Bought a $5 Domain on Impulse. Now It's a Game.](/journal/i-bought-a-5-domain-on-impulse/)
+
 ## Features
 
 - An infinite world, so the food can end up outside your view

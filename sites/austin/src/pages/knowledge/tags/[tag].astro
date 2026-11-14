@@ -1,24 +1,11 @@
 ---
-import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
-import KnowledgeList from "../../../components/KnowledgeList.astro";
-import PageHeader from "../../../components/PageHeader.astro";
-import { knowledgeTags, loadKnowledge, tagSlug } from "../../../lib/content";
-import Base from "../../../layouts/Base.astro";
+import { journalTags, loadJournal } from "../../../lib/content";
 
 export async function getStaticPaths() {
-  const posts = await loadKnowledge();
-  return knowledgeTags(posts).map((tag) => ({ params: { tag: tag.slug }, props: { name: tag.name } }));
+  const posts = await loadJournal();
+  return journalTags(posts).map((tag) => ({ params: { tag: tag.slug } }));
 }
 
 const { tag } = Astro.params;
-const { name } = Astro.props;
-const posts = (await loadKnowledge()).filter((post) => post.data.tags.some((item) => tagSlug(item) === tag));
-const description = `Articles and videos tagged ${name}.`;
+return Astro.redirect(`/journal/tags/${tag}/`);
 ---
-
-<Base title={name} description={description} current="knowledge">
-  <ContentPanel>
-    <PageHeader kicker="Knowledge" title={name} intro={description} symbol="book" tone="violet" />
-    <KnowledgeList posts={posts} activeTag={tag} />
-  </ContentPanel>
-</Base>

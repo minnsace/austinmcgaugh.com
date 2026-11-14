@@ -10,6 +10,7 @@ export const brand = {
   email: "contact@austinmcgaugh.com",
   description: "Personal site of Austin McGaugh, software engineer and founder of Minnsace Inc.",
   tagline: "Software engineer, game developer, and founder of Minnsace Inc.",
+  feed: "/journal/rss.xml",
   colors: {
     obsidian: "#090b10",
     graphite: "#10131a",
@@ -33,9 +34,9 @@ export const brand = {
       summary: "Software and games.",
     },
     {
-      id: "knowledge",
-      label: "Knowledge",
-      href: "/knowledge/",
+      id: "journal",
+      label: "Journal",
+      href: "/journal/",
       symbol: "book",
       color: "violet",
       summary: "Articles and videos.",

@@ -1,0 +1,24 @@
+---
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import JournalList from "../../../components/JournalList.astro";
+import PageHeader from "../../../components/PageHeader.astro";
+import { journalTags, loadJournal, tagSlug } from "../../../lib/content";
+import Base from "../../../layouts/Base.astro";
+
+export async function getStaticPaths() {
+  const posts = await loadJournal();
+  return journalTags(posts).map((tag) => ({ params: { tag: tag.slug }, props: { name: tag.name } }));
+}
+
+const { tag } = Astro.params;
+const { name } = Astro.props;
+const posts = (await loadJournal()).filter((post) => post.data.tags.some((item) => tagSlug(item) === tag));
+const description = `Articles and videos tagged ${name}.`;
+---
+
+<Base title={name} description={description} current="journal">
+  <ContentPanel>
+    <PageHeader kicker="Journal" title={name} intro={description} symbol="book" tone="violet" />
+    <JournalList posts={posts} activeTag={tag} />
+  </ContentPanel>
+</Base>

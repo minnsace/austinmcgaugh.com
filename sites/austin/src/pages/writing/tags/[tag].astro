@@ -1,0 +1,11 @@
+---
+import { journalTags, loadJournal } from "../../../lib/content";
+
+export async function getStaticPaths() {
+  const posts = await loadJournal();
+  return journalTags(posts).map((tag) => ({ params: { tag: tag.slug } }));
+}
+
+const { tag } = Astro.params;
+return Astro.redirect(`/journal/tags/${tag}/`);
+---

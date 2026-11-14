@@ -18,7 +18,7 @@ These hold in every phase.
 | --- | --- |
 | The HTML is the product. The post is in the first response. | A canvas the crawler cannot read. A loader in front of the article. Text drawn in WebGL. |
 | One router. The nav, the keyboard, a portal, and the Back button all change the same URL. | A portal that is the only menu. A flythrough that ignores the address bar. |
-| A URL is a place. `/knowledge/:slug` is that post. | Replaying an intro on a shared link. |
+| A URL is a place. `/journal/:slug` is that post. | Replaying an intro on a shared link. |
 | The intro, when it exists, plays on `/` only, once, for a few seconds. | An unskippable sting. Intro assets on the way to a post. |
 | Esc, a nav item, or any link skips a shot. Deep links never play one. | Scroll-jacking. A custom cursor. A cutscene between a section and a post. |
 | Panels are real type on a solid surface, about 65 characters wide, selectable. | Glass text over a busy shader. |
@@ -33,7 +33,7 @@ Three sections. Each one is a portal in the later world. There is no Arena. That
 | Section | URL | Color | Symbol | What it holds |
 | --- | --- | --- | --- | --- |
 | Projects | `/projects/` | Electric blue | Cube | Games. Each game has its own page. |
-| Knowledge | `/knowledge/` | Violet | Book | Articles and videos in one feed, newest first, with tags. A post is `/knowledge/:slug/`. |
+| Journal | `/journal/` | Violet | Book | Articles and videos in one feed, newest first, with tags. A post is `/journal/:slug/`. |
 | Workshop | `/workshop/` | Molten orange | Anvil | Minnsace Inc., and short progress notes. |
 
 Cyan is the focus ring and the link color. Magenta is the personal mark beside the name. Neither is a section.
@@ -44,10 +44,11 @@ Old addresses redirect:
 
 | From | To |
 | --- | --- |
-| `/writing/` | `/knowledge/` |
+| `/writing/` and `/writing/*` | `/journal/` and `/journal/*` |
+| `/knowledge/` and `/knowledge/*` | `/journal/` and `/journal/*` |
 | `/work/` | `/projects/` |
 | `/contact/` | `/about/#contact` |
-| `/feed.xml` | The Knowledge RSS feed, same as `/knowledge/rss.xml` |
+| `/feed.xml` | The Journal RSS feed, same as `/journal/rss.xml` |
 
 ## Palette
 
@@ -62,7 +63,7 @@ The values live in `sites/austin/src/brand/manifest.ts`. This is the current Aus
 | Muted | `#c3bdb2` | Meta text, still above 4.5:1 on a panel |
 | Electric | `#3d7eff` | Projects, the cube, the primary button |
 | Cyan | `#5ee7d8` | Links and focus |
-| Violet | `#9b87ff` | Knowledge, the book |
+| Violet | `#9b87ff` | Journal, the book |
 | Magenta | `#ff4fa3` | The mark by the name |
 | Amber | `#ff8a3d` | Workshop, the anvil |
 
@@ -73,7 +74,7 @@ Type is Instrument Serif for titles and Instrument Sans for everything else, sel
 Color plus symbol is the map, before any 3D exists.
 
 - Blue cube: Projects. Games.
-- Violet book: Knowledge. Articles and videos.
+- Violet book: Journal. Articles and videos.
 - Amber anvil: Workshop. The studio.
 
 The nav shows the symbol in its color on every page. The current section gets a line in that color and `aria-current="page"`. In phase 3 the matching portal lights, and choosing it is the same navigation as the text link.
@@ -95,7 +96,7 @@ Astro prerenders Markdown and MDX to static HTML. GitHub Actions uploads `sites/
 
 Content collections:
 
-- `knowledge`: `title`, `description`, `date`, `tags`, `type` (`article` or `video`), optional `video`, optional `cover`, `draft`.
+- `journal`: `title`, `description`, `date`, `tags`, `type` (`article` or `video`), optional `video`, optional `cover`, `draft`. Files live in `sites/austin/src/content/journal/`.
 - `projects`: `title`, `description`, `url`, `linkLabel`, `status`, `kind`, optional `date`, `order`, optional `price`, optional `platform`, `draft`.
 - `workshop`: `title`, `description`, `date`, `draft`.
 
@@ -105,7 +106,7 @@ A video page renders a facade: a real link, and an iframe only after a click. Yo
 
 Every page has a title, description, canonical URL, Open Graph and Twitter card, and JSON-LD. The graph always includes `WebSite`, `Person`, and `Organization` (Minnsace Inc.). Posts add `BlogPosting`. Video posts also add `VideoObject`. Games add `VideoGame`. The projects index adds `ItemList`.
 
-Also shipped: `sitemap-index.xml`, `robots.txt`, `/knowledge/rss.xml`, `/feed.xml`, a favicon, and a generated social image.
+Also shipped: `sitemap-index.xml`, `robots.txt`, `/journal/rss.xml`, `/feed.xml`, a favicon, and a generated social image.
 
 The portrait is a responsive AVIF and WebP set. The poster is an AVIF with WebP and JPEG fallbacks. There is no Google font request.
 
@@ -120,7 +121,7 @@ Each phase is usable on its own. The world does not come before the posts.
 | 3. The map | Sculpture, platform, three portals. The current route lights its portal. Clicking a portal is the same navigation as the text link. No flythrough yet. | Keyboard and pointer reach every section and every post. Back works. Deep links cut. They do not travel. |
 | 4. The shots | A short arrival on `/` only, once per session. A skippable spline between sections. Esc, the nav, and any link cut. | Opening a shared post never plays the intro. Skipping feels instant. |
 | 5. Materials, fog, audio | Iridescent glass on the sculpture only, height fog, a few particles, beams toward the hovered destination, positional tones, mute. | A person can say what each color means. Nothing moves unless it points at a place or marks the one you are in. The frame budget holds. |
-| 6. Find a post | A filter over the real Knowledge posts. An optional one-line answer only when it cites a post and links it. Quiet mode keeps the filter and drops any pulse. | Typing a title lands on that URL. The feature still works with the canvas removed. No key in the client. |
+| 6. Find a post | A filter over the real Journal posts. An optional one-line answer only when it cites a post and links it. Quiet mode keeps the filter and drops any pulse. | Typing a title lands on that URL. The feature still works with the canvas removed. No key in the client. |
 | 7. minnsace.com | The runtime reads a manifest. The studio site supplies its own sculpture, portals, and copy. | No renderer or nav code is copied. The personal site can stay wilder than the company site. |
 
 Frame budget, from here on: 60fps at a 1.5 pixel cap on a mid laptop, with the panel interactive. Transmission, bloom, and the spline are desktop. Mobile and quiet mode use the poster or a single unlit view, large tap targets, and the same links. Particles in the thousands only on desktop. A few hundred if a low-power device insists on WebGL. Zero in quiet mode.
@@ -132,13 +133,13 @@ Fog is analytic, not a volume, so mobile can drop it. The composer is selective 
 - Leave Jekyll and the injected Primer stylesheet. Astro builds a static site. The Pages workflow is Node, not Ruby.
 - Three.js, not React Three Fiber, and not in phase 1. The stub exports the quality switch, the shot sequencer, and `mount`. Phase 2 is allowed to import `three` inside the runtime only.
 - Arena is dropped. Three portals, not four.
-- Knowledge is one feed. A video is a post with a URL, not a separate section.
+- Journal is one feed. A video is a post with a URL, not a separate section. The section was named Knowledge, then renamed; the URL is `/journal/`.
 - Drafts are how examples live in the repo without being published as if they were real.
 - Brand-specific values stay in the manifest: colors, names, socials, portals, the studio record.
 - The panels are opaque. The poster shows in the margins and between panels. Phase 2 does not need a new layout to float those panels over a canvas.
 - The old copy, socials, email, and portrait stay. Project facts come from the Steam page, freesnakegame.com, and minnsace.com. Missing facts stay missing.
 - The only email on this site is contact@austinmcgaugh.com, including where the studio is mentioned. The personal LinkedIn is https://www.linkedin.com/in/austinmcgaugh/. A company LinkedIn URL is not linked until it can be verified.
-- `/writing/` and `/work/` redirect, rather than disappearing.
+- `/writing/`, `/knowledge/`, and `/work/` redirect, rather than disappearing. Post and tag URLs under `/writing/` and `/knowledge/` redirect to the same path under `/journal/`.
 - HTTPS enforcement is a GitHub Pages setting. The certificate is already there. Austin turns the setting on. The repository cannot.
 
 ## What not to add

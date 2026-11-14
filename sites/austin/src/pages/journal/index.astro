@@ -1,0 +1,21 @@
+---
+import ContentPanel from "@digital-forge/ui/ContentPanel.astro";
+import JournalList from "../../components/JournalList.astro";
+import PageHeader from "../../components/PageHeader.astro";
+import { loadJournal } from "../../lib/content";
+import { brand } from "../../brand/manifest";
+import Base from "../../layouts/Base.astro";
+
+const posts = await loadJournal();
+const description = "Articles and videos by Austin McGaugh.";
+---
+
+<Base title="Journal" description={description} current="journal">
+  <ContentPanel>
+    <PageHeader kicker="Notes and video" title="Journal" intro={description} symbol="book" tone="violet" />
+    <p class="cluster">
+      <a class="text-link" href={brand.feed}>Subscribe with RSS</a>
+    </p>
+    <JournalList posts={posts} />
+  </ContentPanel>
+</Base>

@@ -4,8 +4,8 @@ import type { AccentName } from "@digital-forge/ui/types";
 import { formatDate } from "../lib/content";
 
 interface Props {
-  article?: CollectionEntry<"knowledge">;
-  video?: CollectionEntry<"knowledge">;
+  article?: CollectionEntry<"journal">;
+  video?: CollectionEntry<"journal">;
   project?: CollectionEntry<"projects">;
   update?: CollectionEntry<"workshop">;
 }
@@ -26,7 +26,7 @@ const cards: Array<{
 }> = [
   article
     ? {
-        href: `/knowledge/${article.id}/`,
+        href: `/journal/${article.id}/`,
         kicker: "Latest article",
         title: article.data.title,
         description: article.data.description,
@@ -34,7 +34,7 @@ const cards: Array<{
         tone: "violet",
       }
     : {
-        href: "/knowledge/",
+        href: "/journal/",
         kicker: "Latest article",
         title: "Nothing published yet",
         description: "Articles will show up here.",
@@ -42,7 +42,7 @@ const cards: Array<{
       },
   video
     ? {
-        href: `/knowledge/${video.id}/`,
+        href: `/journal/${video.id}/`,
         kicker: "Latest video",
         title: video.data.title,
         description: video.data.description,
@@ -50,7 +50,7 @@ const cards: Array<{
         tone: "violet",
       }
     : {
-        href: "/knowledge/",
+        href: "/journal/",
         kicker: "Latest video",
         title: "Nothing published yet",
         description: "Videos will show up here.",
