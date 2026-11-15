@@ -14,7 +14,8 @@ export default defineConfig({
         !/\.(png|xml|svg|jpg|jpeg|webp|avif|ico)$/.test(page) &&
         !/\/(404|work|writing|knowledge|contact)(\/|\.html)?$/.test(page) &&
         !page.includes("/writing/") &&
-        !page.includes("/knowledge/"),
+        !page.includes("/knowledge/") &&
+        !page.includes("/m/"),
     }),
   ],
   redirects: {

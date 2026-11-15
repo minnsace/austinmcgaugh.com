@@ -1,0 +1,51 @@
+---
+import { formatDate, journalTags, loadJournal, tagSlug } from "../../../../lib/content";
+import Mobile from "../../../../layouts/Mobile.astro";
+
+export async function getStaticPaths() {
+  const posts = await loadJournal();
+  return journalTags(posts).map((tag) => ({ params: { tag: tag.slug }, props: { name: tag.name } }));
+}
+
+const { tag } = Astro.params;
+const { name } = Astro.props;
+const posts = (await loadJournal()).filter((post) => post.data.tags.some((item) => tagSlug(item) === tag));
+const tags = journalTags(await loadJournal());
+const description = `Articles and videos tagged ${name}.`;
+---
+
+<Mobile title={name} description={description} current="journal" canonicalPath={`/journal/tags/${tag}/`}>
+  <header class="m-pagehead" style="--mark: var(--color-violet)">
+    <p class="m-kicker">Journal</p>
+    <h1>{name}</h1>
+    <p>{description}</p>
+  </header>
+  <ul class="m-tags">
+    <li>
+      <a href="/m/journal/">All</a>
+    </li>
+    {
+      tags.map((item) => (
+        <li>
+          <a href={`/m/journal/tags/${item.slug}/`} aria-current={item.slug === tag ? "page" : undefined}>
+            {item.name}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+  <ul class="m-stack">
+    {
+      posts.map((post) => (
+        <li>
+          <a class="m-card" href={`/m/journal/${post.id}/`} style="--mark: var(--color-violet)">
+            <p class="m-kicker">{post.data.type === "video" ? "Video" : "Article"}</p>
+            <h2>{post.data.title}</h2>
+            <p>{post.data.description}</p>
+            <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Mobile>

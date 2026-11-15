@@ -1,0 +1,31 @@
+---
+import { formatDate, loadProjects } from "../../../lib/content";
+import Mobile from "../../../layouts/Mobile.astro";
+
+const projects = await loadProjects();
+const description = "Software and games by Austin McGaugh.";
+---
+
+<Mobile title="Projects" description={description} current="projects" canonicalPath="/projects/">
+  <header class="m-pagehead" style="--mark: var(--color-electric)">
+    <p class="m-kicker">Work</p>
+    <h1>Projects</h1>
+    <p>{description}</p>
+  </header>
+  <ul class="m-stack">
+    {
+      projects.map((project) => (
+        <li>
+          <a class="m-card" href={`/m/projects/${project.id}/`} style="--mark: var(--color-electric)">
+            <p class="m-kicker">
+              {project.data.kind} · {project.data.status}
+            </p>
+            <h2>{project.data.title}</h2>
+            <p>{project.data.description}</p>
+            {project.data.date && <time datetime={project.data.date.toISOString()}>{formatDate(project.data.date)}</time>}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Mobile>

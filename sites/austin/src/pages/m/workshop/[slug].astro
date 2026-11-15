@@ -1,0 +1,39 @@
+---
+import { getEntry, render } from "astro:content";
+import { formatDate, loadWorkshop } from "../../../lib/content";
+import Mobile from "../../../layouts/Mobile.astro";
+
+export async function getStaticPaths() {
+  const updates = await loadWorkshop();
+  return updates.map((update) => ({ params: { slug: update.id } }));
+}
+
+const { slug } = Astro.params;
+const update = slug ? await getEntry("workshop", slug) : undefined;
+if (!update || (update.data.draft && import.meta.env.PROD)) {
+  throw new Error(`Missing workshop update: ${slug}`);
+}
+
+const { Content } = await render(update);
+---
+
+<Mobile
+  title={update.data.title}
+  description={update.data.description}
+  current="workshop"
+  canonicalPath={`/workshop/${update.id}/`}
+  ogType="article"
+  published={update.data.date}
+>
+  <a class="m-back" href="/m/workshop/">Workshop</a>
+  <header class="m-pagehead" style="--mark: var(--color-amber)">
+    <p class="m-kicker">Progress note</p>
+    <h1>{update.data.title}</h1>
+    <p class="m-quiet">
+      <time datetime={update.data.date.toISOString()}>{formatDate(update.data.date)}</time>
+    </p>
+  </header>
+  <div class="m-prose">
+    <Content />
+  </div>
+</Mobile>

@@ -1,0 +1,81 @@
+---
+import { getImage } from "astro:assets";
+import poster from "../../assets/color-orbit.jpg";
+import { brand } from "../../brand/manifest";
+import { formatDate, loadJournal, loadProjects } from "../../lib/content";
+import Mobile from "../../layouts/Mobile.astro";
+
+const projects = await loadProjects();
+const posts = await loadJournal();
+const lethecary = projects.find((project) => project.id === "the-lethecary");
+const article = posts.find((post) => post.data.type === "article");
+const posterAvif = await getImage({ src: poster, format: "avif", width: 960, quality: 34 });
+const posterWebp = await getImage({ src: poster, format: "webp", width: 960, quality: 44 });
+const posterJpeg = await getImage({ src: poster, format: "jpeg", width: 960, quality: 48 });
+
+const cards = [
+  lethecary && {
+    href: `/m/projects/${lethecary.id}/`,
+    kicker: `${lethecary.data.kind} · ${lethecary.data.status}`,
+    title: lethecary.data.title,
+    description: lethecary.data.description,
+    date: lethecary.data.date,
+    tone: "electric" as const,
+  },
+  article && {
+    href: `/m/journal/${article.id}/`,
+    kicker: "Latest article",
+    title: article.data.title,
+    description: article.data.description,
+    date: article.data.date,
+    tone: "violet" as const,
+  },
+].filter((card) => card !== undefined && card !== null);
+---
+
+<Mobile title={brand.name} description={brand.description} current="home" canonicalPath="/">
+  <section class="m-hero">
+    <picture>
+      <source srcset={posterAvif.src} type="image/avif" />
+      <source srcset={posterWebp.src} type="image/webp" />
+      <img
+        class="m-hero-media"
+        src={posterJpeg.src}
+        alt=""
+        width="960"
+        height="1200"
+        fetchpriority="high"
+        decoding="async"
+      />
+    </picture>
+    <div class="m-hero-wash" aria-hidden="true"></div>
+    <div class="m-hero-copy">
+      <div class="m-hero-card">
+        <p class="m-kicker">Software engineer · Game developer</p>
+        <h1>I build software and <span class="m-accent">games.</span></h1>
+        <p class="m-lede">
+          I’m Austin McGaugh, founder of Minnsace Inc. I build software and games, including FreeSnakeGame.com.
+        </p>
+        <div class="m-actions">
+          <a class="m-button" href="/m/projects/">See projects</a>
+          <a class="m-text" href="/m/about/">About Austin</a>
+        </div>
+      </div>
+    </div>
+  </section>
+  <h2 class="m-section">Latest</h2>
+  <ul class="m-stack">
+    {
+      cards.map((card) => (
+        <li>
+          <a class="m-card" href={card.href} style={`--mark: var(--color-${card.tone})`}>
+            <p class="m-kicker">{card.kicker}</p>
+            <h3>{card.title}</h3>
+            <p>{card.description}</p>
+            {card.date && <time datetime={card.date.toISOString()}>{formatDate(card.date)}</time>}
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Mobile>

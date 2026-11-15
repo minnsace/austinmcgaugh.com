@@ -134,7 +134,10 @@ for (const page of pages) {
     check(marked.length === 0, `${page} should not mark a portal current`);
   }
   const scripts = [...document.querySelectorAll("script")].filter((script) => script.getAttribute("type") !== "application/ld+json");
-  check(scripts.length <= 1 && scripts.every((script) => script.getAttribute("type") === "module"), `${page} should only add the stage boot module`);
+  const modules = scripts.filter((script) => script.getAttribute("type") === "module");
+  const inline = scripts.filter((script) => script.getAttribute("type") !== "module");
+  check(modules.length === 1, `${page} stage boot module`);
+  check(inline.length === 1 && (inline[0].textContent || "").includes("forge-shell"), `${page} shell script`);
   check(!html.includes("Example article") && !html.includes("REPLACE_ME"), `${page} published a draft`);
 
   const urls = [];
@@ -167,6 +170,44 @@ check(home.includes("The Lethecary"), "Home latest project");
 check(!home.includes("Deadlight Tavern"), "Lethecary replaced Deadlight as the latest project");
 check(home.includes("I Bought a $5 Domain on Impulse."), "Home shows the journal post");
 check(home.includes("Nothing published yet"), "Home still has an empty video slot");
+check(home.includes("Mobile version"), "Desktop offers the mobile version");
+check(home.includes("forge-shell"), "Desktop carries the shell script");
+{
+  const { document } = parseHTML(home);
+  const module = [...document.querySelectorAll('script[type="module"]')].find((script) => script.getAttribute("src"));
+  const src = module?.getAttribute("src")?.replace(/^\//, "");
+  check(Boolean(src), "Desktop boot module src");
+  if (src && existsSync(join(dist, src))) {
+    const source = readFileSync(join(dist, src), "utf8");
+    check(!source.includes("WebGLRenderer"), "Desktop entry chunk does not include the scene");
+  }
+}
+
+check(htmlFiles.includes("m/index.html"), "Missing mobile home");
+check(htmlFiles.includes("m/projects/index.html"), "Missing mobile projects");
+check(htmlFiles.includes("m/projects/the-lethecary/index.html"), "Missing mobile Lethecary");
+check(htmlFiles.includes("m/journal/index.html"), "Missing mobile journal");
+check(htmlFiles.includes("m/journal/i-bought-a-5-domain-on-impulse/index.html"), "Missing mobile journal post");
+const mobileHome = htmlFiles.includes("m/index.html") ? read("m/index.html") : "";
+check(mobileHome.includes("The Lethecary"), "Mobile home pins Lethecary");
+check(mobileHome.indexOf("The Lethecary") < mobileHome.indexOf("I Bought a $5 Domain"), "Lethecary is the first latest card");
+check(mobileHome.includes("Full 3D version"), "Mobile offers the full scene");
+check(mobileHome.includes("contact@austinmcgaugh.com"), "Mobile home has the contact link");
+check(mobileHome.includes("linkedin.com/in/austinmcgaugh"), "Mobile home has LinkedIn");
+check(mobileHome.includes('aria-label="Sections"'), "Mobile tab bar");
+check(!mobileHome.includes("forge-stage"), "Mobile home skips the stage");
+check(!mobileHome.includes("WebGLRenderer"), "Mobile home skips Three.js");
+const mobileLethe = htmlFiles.includes("m/projects/the-lethecary/index.html") ? read("m/projects/the-lethecary/index.html") : "";
+check(mobileLethe.includes("rewrite the memory until they forget"), "Mobile Lethecary copy");
+check(mobileLethe.includes("In development"), "Mobile Lethecary status");
+const mobileJournal = htmlFiles.includes("m/journal/index.html") ? read("m/journal/index.html") : "";
+check(mobileJournal.includes("I Bought a $5 Domain on Impulse."), "Mobile journal lists the post");
+check(mobileJournal.includes("--color-violet"), "Mobile journal uses violet");
+const mobileProjects = htmlFiles.includes("m/projects/index.html") ? read("m/projects/index.html") : "";
+check(mobileProjects.includes("--color-electric"), "Mobile projects use electric blue");
+const mobileWorkshop = htmlFiles.includes("m/workshop/index.html") ? read("m/workshop/index.html") : "";
+check(mobileWorkshop.includes("--color-amber"), "Mobile workshop uses amber");
+check(mobileWorkshop.includes("No progress notes yet."), "Mobile workshop empty updates");
 
 const deadlight = htmlFiles.includes("projects/deadlight-tavern/index.html") ? read("projects/deadlight-tavern/index.html") : "";
 check(deadlight.includes("July 18, 2022"), "Deadlight release date");
@@ -301,6 +342,7 @@ for (const url of [
   check(sitemap.includes(url), `Sitemap missing ${url}`);
 }
 check(!sitemap.includes("/work/") && !sitemap.includes("/knowledge/") && !sitemap.includes("example-article"), "Sitemap includes a redirect or draft");
+check(!sitemap.includes("/m/"), "Sitemap includes the mobile shell");
 
 if (htmlFiles.includes("index.html")) {
   const { document } = parseHTML(read("index.html"));

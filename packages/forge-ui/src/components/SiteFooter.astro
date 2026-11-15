@@ -35,6 +35,7 @@ const { brand, year } = Astro.props;
     <div class="footer-meta">
       <a href="/about/">About</a>
       <a href={brand.feed}>RSS</a>
+      <slot name="extra" />
       <p>© {year} {brand.name}</p>
     </div>
   </div>

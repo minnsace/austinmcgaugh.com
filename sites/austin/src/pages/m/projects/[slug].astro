@@ -1,0 +1,69 @@
+---
+import { getEntry, render } from "astro:content";
+import ProjectMeta from "../../../components/ProjectMeta.astro";
+import { loadProjects } from "../../../lib/content";
+import { projectGraph } from "../../../lib/jsonld";
+import { absoluteUrl } from "../../../lib/urls";
+import Mobile from "../../../layouts/Mobile.astro";
+
+export async function getStaticPaths() {
+  const projects = await loadProjects();
+  return projects.map((project) => ({ params: { slug: project.id } }));
+}
+
+const { slug } = Astro.params;
+const project = slug ? await getEntry("projects", slug) : undefined;
+if (!project || (project.data.draft && import.meta.env.PROD)) {
+  throw new Error(`Missing project: ${slug}`);
+}
+
+const { Content } = await render(project);
+const canonical = absoluteUrl(`/projects/${project.id}/`);
+---
+
+<Mobile
+  title={project.data.title}
+  description={project.data.description}
+  current="projects"
+  canonicalPath={`/projects/${project.id}/`}
+  ogType="article"
+  published={project.data.date}
+  jsonLd={projectGraph(project, canonical)}
+>
+  <a class="m-back" href="/m/projects/">All projects</a>
+  <header class="m-pagehead" style="--mark: var(--color-electric)">
+    <p class="m-kicker">{project.data.kind}</p>
+    <h1>{project.data.title}</h1>
+    <p class="m-lede">{project.data.description}</p>
+  </header>
+  <ProjectMeta project={project} />
+  <div class="m-actions">
+    {
+      project.data.url && project.data.linkLabel && (
+        <a class="m-button" href={project.data.url} target="_blank" rel="noopener noreferrer">
+          {project.data.linkLabel}
+          <span class="visually-hidden"> (opens in a new tab)</span>
+        </a>
+      )
+    }
+    {
+      project.data.steam && (
+        <a class="m-button" href={project.data.steam} target="_blank" rel="noopener noreferrer">
+          View on Steam
+          <span class="visually-hidden"> (opens in a new tab)</span>
+        </a>
+      )
+    }
+    {
+      project.data.repository && (
+        <a class="m-text" href={project.data.repository} target="_blank" rel="noopener noreferrer">
+          {project.data.repositoryLabel ?? "Source"}
+          <span class="visually-hidden"> (opens in a new tab)</span>
+        </a>
+      )
+    }
+  </div>
+  <div class="m-prose">
+    <Content />
+  </div>
+</Mobile>

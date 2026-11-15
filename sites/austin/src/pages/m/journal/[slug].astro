@@ -1,0 +1,62 @@
+---
+import { getEntry, render } from "astro:content";
+import { formatDate, loadJournal, tagSlug } from "../../../lib/content";
+import { articleGraph } from "../../../lib/jsonld";
+import { absoluteUrl } from "../../../lib/urls";
+import Mobile from "../../../layouts/Mobile.astro";
+
+export async function getStaticPaths() {
+  const posts = await loadJournal();
+  return posts.map((post) => ({ params: { slug: post.id } }));
+}
+
+const { slug } = Astro.params;
+const post = slug ? await getEntry("journal", slug) : undefined;
+if (!post || (post.data.draft && import.meta.env.PROD)) {
+  throw new Error(`Missing journal post: ${slug}`);
+}
+
+const { Content } = await render(post);
+const canonical = absoluteUrl(`/journal/${post.id}/`);
+---
+
+<Mobile
+  title={post.data.title}
+  description={post.data.description}
+  current="journal"
+  canonicalPath={`/journal/${post.id}/`}
+  ogType="article"
+  published={post.data.date}
+  jsonLd={articleGraph(post, canonical)}
+>
+  <a class="m-back" href="/m/journal/">Journal</a>
+  <header class="m-pagehead" style="--mark: var(--color-violet)">
+    <p class="m-kicker">{post.data.type === "video" ? "Video" : "Article"}</p>
+    <h1>{post.data.title}</h1>
+    <p class="m-quiet">
+      <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+      · Austin McGaugh
+    </p>
+  </header>
+  {
+    post.data.tags.length > 0 && (
+      <ul class="m-tags">
+        {post.data.tags.map((tag) => (
+          <li>
+            <a href={`/m/journal/tags/${tagSlug(tag)}/`}>{tag}</a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    post.data.video && (
+      <p class="m-actions">
+        <a class="m-button" href={post.data.video}>Play video</a>
+      </p>
+    )
+  }
+  <div class="m-prose">
+    <Content />
+  </div>
+</Mobile>

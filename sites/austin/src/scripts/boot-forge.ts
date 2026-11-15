@@ -44,6 +44,7 @@ const portals = [
 ];
 
 export function bootForge() {
+  if (document.documentElement.dataset.shell === "mobile") return;
   const host = document.getElementById(FORGE_STAGE_ID);
   if (!host) return;
 

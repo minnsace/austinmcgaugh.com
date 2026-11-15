@@ -1,0 +1,129 @@
+---
+import { ClientRouter } from "astro:transitions";
+import Symbol from "@digital-forge/ui/Symbol.astro";
+import { brand } from "../brand/manifest";
+import Seo from "../components/Seo.astro";
+import { shellScript, toFullPath } from "../lib/shell";
+import { absoluteUrl, brandStyle } from "../lib/urls";
+import "../styles/mobile.css";
+
+interface Props {
+  title?: string;
+  description?: string;
+  current?: "home" | "projects" | "journal" | "workshop";
+  /** Desktop URL this view represents. */
+  canonicalPath: string;
+  ogType?: "website" | "article";
+  published?: Date;
+  jsonLd?: Record<string, unknown>[];
+}
+
+const {
+  title,
+  description = brand.description,
+  current,
+  canonicalPath,
+  ogType,
+  published,
+  jsonLd,
+} = Astro.props;
+
+const year = new Date().getUTCFullYear();
+const linkedin = brand.socials.find((social) => social.id === "linkedin");
+const tabs = [
+  { id: "home", label: "Home", href: "/m/", symbol: "home" },
+  { id: "projects", label: "Projects", href: "/m/projects/", symbol: "cube", color: "electric" },
+  { id: "journal", label: "Journal", href: "/m/journal/", symbol: "book", color: "violet" },
+  { id: "workshop", label: "Workshop", href: "/m/workshop/", symbol: "anvil", color: "amber" },
+] as const;
+---
+
+<html lang="en" style={brandStyle()}>
+  <head>
+    <Seo
+      title={title}
+      description={description}
+      canonical={absoluteUrl(canonicalPath)}
+      portraitUrl={absoluteUrl("/og.png")}
+      ogType={ogType}
+      published={published}
+      noindex={true}
+      jsonLd={jsonLd}
+    />
+    <script is:inline set:html={shellScript}></script>
+    <ClientRouter />
+  </head>
+  <body class="m-body">
+    <a class="m-skip" href="#main">Skip to content</a>
+    <header class="m-bar">
+      <a class="m-word" href="/m/">
+        <span class="m-mark" aria-hidden="true"></span>
+        {brand.name}
+      </a>
+    </header>
+    <main id="main" class="m-main" transition:animate="fade">
+      <slot />
+      <footer class="m-foot">
+        <a href={`mailto:${brand.email}`}>{brand.email}</a>
+        {
+          linkedin && (
+            <a href={linkedin.href} rel="me noopener noreferrer" target="_blank">
+              LinkedIn
+              <span class="visually-hidden"> (opens in a new tab)</span>
+            </a>
+          )
+        }
+        <a data-shell="full" href={toFullPath(Astro.url.pathname)}>Full 3D version</a>
+        <p>© {year} {brand.name}</p>
+      </footer>
+    </main>
+    <nav class="m-tabs" aria-label="Sections">
+      {
+        tabs.map((tab) => (
+          <a
+            href={tab.href}
+            style={"color" in tab ? `--mark: var(--color-${tab.color})` : undefined}
+            aria-current={current === tab.id ? "page" : undefined}
+          >
+            {tab.symbol === "home" ? (
+              <svg class="symbol" width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+              </svg>
+            ) : (
+              <Symbol name={tab.symbol} size={22} />
+            )}
+            <span>{tab.label}</span>
+          </a>
+        ))
+      }
+    </nav>
+    <script is:inline>
+      (function () {
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        var root = document.documentElement;
+        function setTilt(x, y) {
+          root.style.setProperty("--tilt-x", String(Math.max(-1, Math.min(1, x))));
+          root.style.setProperty("--tilt-y", String(Math.max(-1, Math.min(1, y))));
+        }
+        window.addEventListener(
+          "deviceorientation",
+          function (event) {
+            if (event.gamma == null) return;
+            setTilt(event.gamma / 32, ((event.beta || 0) - 45) / 36);
+          },
+          { passive: true },
+        );
+        var hero = document.querySelector(".m-hero");
+        if (!hero) return;
+        hero.addEventListener(
+          "pointermove",
+          function (event) {
+            var box = hero.getBoundingClientRect();
+            setTilt(((event.clientX - box.left) / box.width) * 2 - 1, ((event.clientY - box.top) / box.height) * 2 - 1);
+          },
+          { passive: true },
+        );
+      })();
+    </script>
+  </body>
+</html>

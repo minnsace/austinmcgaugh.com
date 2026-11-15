@@ -8,6 +8,7 @@ import portrait from "../assets/austin-mcgaugh.png";
 import poster from "../assets/color-orbit.jpg";
 import { brand } from "../brand/manifest";
 import Seo from "../components/Seo.astro";
+import { shellScript, toMobilePath } from "../lib/shell";
 import { absoluteUrl, brandStyle } from "../lib/urls";
 import "../styles/global.css";
 
@@ -55,6 +56,7 @@ const year = new Date().getUTCFullYear();
       noindex={noindex}
       jsonLd={jsonLd}
     />
+    <script is:inline set:html={shellScript}></script>
   </head>
   <body>
     <SkipLink />
@@ -69,10 +71,14 @@ const year = new Date().getUTCFullYear();
     <main id="main" class="shell site-main" tabindex="-1">
       <slot />
     </main>
-    <SiteFooter brand={brand} year={year} />
+    <SiteFooter brand={brand} year={year}>
+      <a slot="extra" class="shell-swap" data-shell="mobile" href={toMobilePath(Astro.url.pathname)}>Mobile version</a>
+    </SiteFooter>
     <script>
-      import { bootForge } from "../scripts/boot-forge";
-      bootForge();
+      if (document.documentElement.dataset.shell !== "mobile") {
+        const { bootForge } = await import("../scripts/boot-forge");
+        bootForge();
+      }
     </script>
   </body>
 </html>

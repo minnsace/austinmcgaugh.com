@@ -801,6 +801,15 @@ h1,
   color: var(--color-muted);
 }
 
+.shell-swap {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  color: var(--color-cyan);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .symbol {
   display: block;
   flex: none;
@@ -927,7 +936,8 @@ body.is-world:not(.is-list) .footer-meta p {
 
 body.is-world:not(.is-list) .email-link,
 body.is-world:not(.is-list) .social-list a,
-body.is-world:not(.is-list) .footer-meta a {
+body.is-world:not(.is-list) .footer-meta a,
+body.is-world:not(.is-list) .shell-swap {
   min-height: 36px;
 }
 

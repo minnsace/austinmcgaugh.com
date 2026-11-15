@@ -1,0 +1,54 @@
+---
+import { brand } from "../../../brand/manifest";
+import { formatDate, journalTags, loadJournal } from "../../../lib/content";
+import Mobile from "../../../layouts/Mobile.astro";
+
+const posts = await loadJournal();
+const tags = journalTags(posts);
+const description = "Articles and videos by Austin McGaugh.";
+---
+
+<Mobile title="Journal" description={description} current="journal" canonicalPath="/journal/">
+  <header class="m-pagehead" style="--mark: var(--color-violet)">
+    <p class="m-kicker">Notes and video</p>
+    <h1>Journal</h1>
+    <p>{description}</p>
+  </header>
+  <p class="m-actions">
+    <a class="m-text" href={brand.feed}>Subscribe with RSS</a>
+  </p>
+  {
+    tags.length > 0 && (
+      <ul class="m-tags">
+        <li>
+          <a href="/m/journal/" aria-current="page">
+            All
+          </a>
+        </li>
+        {tags.map((tag) => (
+          <li>
+            <a href={`/m/journal/tags/${tag.slug}/`}>{tag.name}</a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+  {
+    posts.length === 0 ? (
+      <p class="m-empty">No posts yet.</p>
+    ) : (
+      <ul class="m-stack">
+        {posts.map((post) => (
+          <li>
+            <a class="m-card" href={`/m/journal/${post.id}/`} style="--mark: var(--color-violet)">
+              <p class="m-kicker">{post.data.type === "video" ? "Video" : "Article"}</p>
+              <h2>{post.data.title}</h2>
+              <p>{post.data.description}</p>
+              <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Mobile>

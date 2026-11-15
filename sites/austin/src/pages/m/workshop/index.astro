@@ -1,0 +1,46 @@
+---
+import { brand } from "../../../brand/manifest";
+import { formatDate, loadWorkshop } from "../../../lib/content";
+import Mobile from "../../../layouts/Mobile.astro";
+
+const updates = await loadWorkshop();
+const description = "Minnsace Inc., the independent game studio founded by Austin McGaugh.";
+---
+
+<Mobile title="Workshop" description={description} current="workshop" canonicalPath="/workshop/">
+  <header class="m-pagehead" style="--mark: var(--color-amber)">
+    <p class="m-kicker">{brand.organization.name}</p>
+    <h1>Workshop</h1>
+    <p>Minnsace Inc. is my company. I build software and games.</p>
+  </header>
+  <div class="m-prose">
+    <p>
+      <a href={brand.organization.url}>{brand.organization.name}</a> is an independent game studio. I founded it. The released game,
+      <a href="/m/projects/deadlight-tavern/">Deadlight Tavern</a>, is available free on Steam.
+    </p>
+    <p>
+      <a href="/m/projects/free-snake-game/">FreeSnakeGame.com</a> is one of my projects.
+    </p>
+    <p>
+      Email me at <a href={`mailto:${brand.email}`}>{brand.email}</a> about the studio, a game, or other work.
+    </p>
+  </div>
+  <h2 class="m-section">Now</h2>
+  {
+    updates.length === 0 ? (
+      <p class="m-empty">No progress notes yet.</p>
+    ) : (
+      <ul class="m-stack">
+        {updates.map((update) => (
+          <li>
+            <a class="m-card" href={`/m/workshop/${update.id}/`} style="--mark: var(--color-amber)">
+              <p class="m-kicker">{formatDate(update.data.date)}</p>
+              <h2>{update.data.title}</h2>
+              <p>{update.data.description}</p>
+            </a>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Mobile>

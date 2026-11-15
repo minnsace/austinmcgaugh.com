@@ -1,0 +1,50 @@
+---
+import { Picture } from "astro:assets";
+import portrait from "../../../assets/austin-mcgaugh.png";
+import { brand } from "../../../brand/manifest";
+import Mobile from "../../../layouts/Mobile.astro";
+
+const description = "About Austin McGaugh, software engineer, game developer, and founder of Minnsace Inc.";
+---
+
+<Mobile title="About" description={description} canonicalPath="/about/">
+  <header class="m-pagehead">
+    <p class="m-kicker">About</p>
+    <h1>Austin McGaugh</h1>
+    <p class="m-lede">{brand.tagline}</p>
+  </header>
+  <Picture
+    src={portrait}
+    alt="Portrait of Austin McGaugh"
+    widths={[480, 800]}
+    sizes="80vw"
+    formats={["avif", "webp"]}
+    fallbackFormat="webp"
+    quality={68}
+    class="m-portrait"
+    pictureAttributes={{ class: "m-portrait" }}
+  />
+  <div class="m-prose">
+    <h2>Minnsace Inc.</h2>
+    <p>Minnsace Inc. is my company. I build software and games.</p>
+    <p>
+      FreeSnakeGame.com is one of my projects. Games are listed on the <a href="/m/projects/">Projects</a> page, and the studio lives in the
+      <a href="/m/workshop/">Workshop</a>.
+    </p>
+    <h2 id="contact">Contact</h2>
+    <p>Email me about software engineering, game development, or other work.</p>
+    <p><a href={`mailto:${brand.email}`}>{brand.email}</a></p>
+    <h2>Profiles</h2>
+    <ul>
+      {
+        brand.socials.map((social) => (
+          <li>
+            <a href={social.href} rel="me noopener noreferrer" target="_blank">
+              {social.label}
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </div>
+</Mobile>
