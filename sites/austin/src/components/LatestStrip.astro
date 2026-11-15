@@ -31,15 +31,9 @@ const cards: Array<{
         title: article.data.title,
         description: article.data.description,
         date: article.data.date,
-        tone: "violet",
+        tone: "violet" as const,
       }
-    : {
-        href: "/journal/",
-        kicker: "Latest article",
-        title: "Nothing published yet",
-        description: "Articles will show up here.",
-        tone: "violet",
-      },
+    : undefined,
   video
     ? {
         href: `/journal/${video.id}/`,
@@ -47,15 +41,9 @@ const cards: Array<{
         title: video.data.title,
         description: video.data.description,
         date: video.data.date,
-        tone: "violet",
+        tone: "violet" as const,
       }
-    : {
-        href: "/journal/",
-        kicker: "Latest video",
-        title: "Nothing published yet",
-        description: "Videos will show up here.",
-        tone: "violet",
-      },
+    : undefined,
   workshopWins && update
     ? {
         href: `/workshop/${update.id}/`,
@@ -63,7 +51,7 @@ const cards: Array<{
         title: update.data.title,
         description: update.data.description,
         date: update.data.date,
-        tone: "amber",
+        tone: "amber" as const,
       }
     : project
       ? {
@@ -72,16 +60,10 @@ const cards: Array<{
           title: project.data.title,
           description: project.data.description,
           date: project.data.date,
-          tone: "electric",
+          tone: "electric" as const,
         }
-      : {
-          href: "/projects/",
-          kicker: "Latest project",
-          title: "Nothing published yet",
-          description: "Projects and workshop notes will show up here.",
-          tone: "electric",
-        },
-];
+      : undefined,
+].filter((card): card is NonNullable<typeof card> => Boolean(card));
 ---
 
 <ul class="latest-grid">

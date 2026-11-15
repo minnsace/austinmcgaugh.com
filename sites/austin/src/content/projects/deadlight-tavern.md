@@ -18,3 +18,5 @@ Deadlight Tavern is the released game from Minnsace Inc. Steam lists the develop
 The same listing calls it Action and Indie. A night is split between service and a horde: pour drinks and keep regulars happy, then defend the bar when the horde arrives. It supports single-player and online co-op for up to four players. The interface and subtitles are in English. A Steam account is required to download and play.
 
 For the current build, system requirements, and download, use the Steam page.
+
+[Minnsace Inc.](https://minnsace.com/) publishes Deadlight Tavern. It is also listed on [itch.io](https://minnsace.itch.io/deadlight-tavern).

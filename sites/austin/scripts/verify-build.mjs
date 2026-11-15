@@ -71,12 +71,6 @@ for (const leftover of leftovers) {
 }
 
 check(existsSync(dist), "dist/ was not built");
-const builtHtml = existsSync(dist) ? walk(dist).filter((file) => file.endsWith(".html")) : [];
-for (const file of builtHtml) {
-  const html = readFileSync(file, "utf8");
-  check(!html.includes("hello@minnsace.com"), `${relative(dist, file)} still uses hello@minnsace.com`);
-  check(!html.includes("linkedin.com/company"), `${relative(dist, file)} links a company LinkedIn page`);
-}
 const files = existsSync(dist) ? walk(dist) : [];
 const htmlFiles = files.filter((file) => file.endsWith(".html")).map((file) => relative(dist, file));
 
@@ -115,7 +109,9 @@ for (const page of pages) {
   check(document.querySelector("a.skip-link")?.getAttribute("href") === "#main", `${page} skip link`);
   check(document.querySelector("main#main"), `${page} main`);
   check(document.querySelector("#forge-stage")?.getAttribute("data-quality") === "quiet", `${page} quiet stage`);
-  check(document.querySelector('link[rel="canonical"]')?.getAttribute("href")?.startsWith("https://austinmcgaugh.com"), `${page} canonical`);
+  const canonicalLink = document.querySelector('link[rel="canonical"]')?.getAttribute("href");
+  if (page === "404.html") check(!canonicalLink, "404 should not publish a canonical");
+  else check(canonicalLink?.startsWith("https://austinmcgaugh.com"), `${page} canonical`);
   check(document.querySelector('meta[property="og:title"]'), `${page} og:title`);
   check(document.querySelector('meta[property="og:image"]')?.getAttribute("content")?.startsWith("https://"), `${page} og:image`);
   check(document.querySelector('meta[name="twitter:card"]')?.getAttribute("content") === "summary_large_image", `${page} twitter card`);
@@ -167,9 +163,21 @@ for (const page of pages) {
 const home = htmlFiles.includes("index.html") ? read("index.html") : "";
 check(home.includes("I’m Austin McGaugh, founder of Minnsace Inc."), "Home hero copy");
 check(home.includes("The Lethecary"), "Home latest project");
-check(!home.includes("Deadlight Tavern"), "Lethecary replaced Deadlight as the latest project");
+check(home.includes("Deadlight Tavern is on Steam"), "Home description names Deadlight");
+check(home.includes("FreeSnakeGame.com is a browser game"), "Home description names FreeSnakeGame");
+check(home.includes("<title>Austin McGaugh — Software Engineer, Game Developer &amp; Founder of Minnsace Inc.</title>") || home.includes("<title>Austin McGaugh — Software Engineer, Game Developer & Founder of Minnsace Inc.</title>"), "Home title");
 check(home.includes("I Bought a $5 Domain on Impulse."), "Home shows the journal post");
-check(home.includes("Nothing published yet"), "Home still has an empty video slot");
+check(!home.includes("Nothing published yet"), "Home no longer renders an empty latest slot");
+check(home.includes("https://austinmcgaugh.com/#person"), "Person @id");
+check(home.includes("Founder of Minnsace Inc."), "Person jobTitle names the studio");
+check(home.includes("https://austinmcgaugh.com/austin-mcgaugh.webp"), "Stable portrait URL");
+check(home.includes("https://github.com/minnsace"), "Person sameAs includes GitHub");
+check(home.includes("https://itch.io/profile/minnsace"), "Person sameAs includes itch");
+check(home.includes("https://minnsace.com/#organization"), "Organization @id");
+check(home.includes("hello@minnsace.com"), "Organization email");
+check(home.includes("https://www.linkedin.com/company/minnsace"), "Organization LinkedIn");
+check(home.includes('twitter:creator" content="@AustinMcGaugh"') || home.includes("twitter:creator"), "twitter:creator");
+check(home.includes("og:image:alt"), "og:image:alt");
 check(home.includes("Mobile version"), "Desktop offers the mobile version");
 check(home.includes("forge-shell"), "Desktop carries the shell script");
 {
@@ -213,7 +221,10 @@ const deadlight = htmlFiles.includes("projects/deadlight-tavern/index.html") ? r
 check(deadlight.includes("July 18, 2022"), "Deadlight release date");
 check(deadlight.includes("survival bar game"), "Deadlight Steam description");
 check(deadlight.includes("https://store.steampowered.com/app/2071710/Deadlight_Tavern/"), "Deadlight Steam URL");
+check(deadlight.includes("https://minnsace.com/"), "Deadlight links the studio");
+check(deadlight.includes("https://minnsace.itch.io/deadlight-tavern"), "Deadlight links itch");
 check(deadlight.includes("VideoGame"), "Deadlight VideoGame JSON-LD");
+check(deadlight.includes('"url":"https://austinmcgaugh.com/projects/deadlight-tavern/"'), "Deadlight VideoGame url is the on-site page");
 
 const snake = htmlFiles.includes("projects/free-snake-game/index.html") ? read("projects/free-snake-game/index.html") : "";
 check(snake.includes("https://freesnakegame.com/"), "FreeSnake URL");
@@ -228,8 +239,18 @@ check(lethecary.includes("In development"), "Lethecary status");
 check(lethecary.includes("rewrite the memory until they forget"), "Lethecary copy");
 check(lethecary.includes("Being built in public"), "Lethecary public-build note");
 check(lethecary.includes("/journal/"), "Lethecary links the journal");
-check(!lethecary.includes("store.steampowered.com"), "Lethecary hides the Steam link until a URL is set");
+check(!/<a [^>]*store\.steampowered\.com/.test(lethecary), "Lethecary hides the Steam link until a URL is set");
 check(!lethecary.includes("View on Steam"), "Lethecary does not show a Steam button");
+{
+  const { document } = parseHTML(lethecary);
+  const game = [...document.querySelectorAll('script[type="application/ld+json"]')]
+    .flatMap((script) => JSON.parse(script.textContent)["@graph"] ?? [])
+    .find((node) => node["@type"] === "VideoGame");
+  check(game && !game.datePublished, "Lethecary VideoGame has no datePublished");
+  check(game?.creativeWorkStatus === "In development", "Lethecary creativeWorkStatus");
+  check(Array.isArray(game?.genre) && game.genre.includes("psychological horror"), "Lethecary genre");
+  check(!game?.sameAs, "Lethecary VideoGame has no Steam or itch sameAs");
+}
 
 const journal = htmlFiles.includes("journal/index.html") ? read("journal/index.html") : "";
 check(journal.includes("I Bought a $5 Domain on Impulse."), "Journal lists the post");
@@ -248,8 +269,10 @@ const workshop = htmlFiles.includes("workshop/index.html") ? read("workshop/inde
 check(workshop.includes("Minnsace Inc. is my company."), "Workshop carries the studio sentence");
 check(workshop.includes("No progress notes yet."), "Workshop empty updates");
 check(workshop.includes("contact@austinmcgaugh.com"), "Workshop uses the personal email");
-check(!workshop.includes("hello@minnsace.com"), "Workshop still mentions the old studio email");
-check(!workshop.includes("linkedin.com/company"), "Unverified company LinkedIn is linked");
+check(workshop.includes("The Lethecary"), "Workshop mentions The Lethecary");
+check(workshop.includes("https://minnsace.com/"), "Workshop links the studio site");
+check(workshop.includes("https://github.com/minnsace"), "Workshop links GitHub");
+check(workshop.includes("https://itch.io/profile/minnsace"), "Workshop links itch");
 
 const about = htmlFiles.includes("about/index.html") ? read("about/index.html") : "";
 check(about.includes('alt="Portrait of Austin McGaugh"'), "Portrait alt text");
@@ -263,7 +286,14 @@ check(about.includes('alt="Portrait of Austin McGaugh"'), "Portrait alt text");
 check(!about.includes("austin-mcgaugh.png"), "About page still references the source PNG");
 check(about.includes('id="contact"'), "Contact anchor");
 check(about.includes("contact@austinmcgaugh.com"), "Personal email");
-for (const social of ["https://x.com/AustinMcGaugh", "https://www.linkedin.com/in/austinmcgaugh/", "https://www.youtube.com/@AustinMcGaugh"]) {
+for (const social of [
+  "https://x.com/AustinMcGaugh",
+  "https://www.linkedin.com/in/austinmcgaugh/",
+  "https://www.youtube.com/@AustinMcGaugh",
+  "https://minnsace.com/",
+  "https://github.com/minnsace",
+  "https://itch.io/profile/minnsace",
+]) {
   check(about.includes(social), `Missing social ${social}`);
 }
 
@@ -274,12 +304,17 @@ for (const [file, target] of [
   ["knowledge/i-bought-a-5-domain-on-impulse/index.html", "/journal/i-bought-a-5-domain-on-impulse/"],
   ["writing/i-bought-a-5-domain-on-impulse/index.html", "/journal/i-bought-a-5-domain-on-impulse/"],
   ["contact/index.html", "/about/#contact"],
+  ["projects/lethecary/index.html", "/projects/the-lethecary/"],
 ]) {
   check(htmlFiles.includes(file), `Missing redirect ${file}`);
   if (!htmlFiles.includes(file)) continue;
   const html = read(file);
   check(html.includes(target), `${file} should send people to ${target}`);
   check(/noindex/i.test(html), `${file} should be noindex`);
+}
+{
+  const contact = htmlFiles.includes("contact/index.html") ? read("contact/index.html") : "";
+  check(contact.includes('rel="canonical" href="https://austinmcgaugh.com/about/"'), "Contact canonical is /about/");
 }
 
 function readDist(path) {
@@ -295,6 +330,13 @@ check(feed.includes("I Bought a $5 Domain on Impulse."), "RSS includes the post"
 check(!feed.includes("Example article") && !feed.includes("REPLACE_ME"), "RSS includes a draft");
 check(legacy.includes("<rss") && legacy.includes("I Bought a $5 Domain on Impulse."), "Legacy /feed.xml");
 check(readDist("robots.txt").includes("https://austinmcgaugh.com/sitemap-index.xml"), "robots sitemap");
+check(readDist("robots.txt").includes("https://austinmcgaugh.com/sitemap.xml"), "robots sitemap.xml");
+const sitemapXml = readDist("sitemap.xml");
+check(sitemapXml.includes("<sitemapindex") || sitemapXml.includes("<urlset"), "sitemap.xml is a sitemap");
+check(existsSync(join(dist, "apple-touch-icon.png")), "apple-touch-icon");
+check(existsSync(join(dist, "site.webmanifest")), "web manifest");
+check(readDist("site.webmanifest").includes("#090b10"), "manifest theme");
+check(existsSync(join(dist, "austin-mcgaugh.webp")), "stable portrait");
 check(readDist("CNAME").trim() === "austinmcgaugh.com", "CNAME");
 check(existsSync(join(dist, "favicon.svg")) && existsSync(join(dist, "favicon.ico")) && existsSync(join(dist, "og.png")), "Icons and social image");
 for (const asset of [
@@ -343,6 +385,8 @@ for (const url of [
 }
 check(!sitemap.includes("/work/") && !sitemap.includes("/knowledge/") && !sitemap.includes("example-article"), "Sitemap includes a redirect or draft");
 check(!sitemap.includes("/m/"), "Sitemap includes the mobile shell");
+check(sitemap.includes("<lastmod>"), "Sitemap entries include lastmod");
+check(!sitemap.includes("/projects/lethecary/"), "Sitemap includes the Lethecary alias");
 
 if (htmlFiles.includes("index.html")) {
   const { document } = parseHTML(read("index.html"));

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { decideShell, isQuestUa, shellScript, toFullPath, toMobilePath } from "../src/lib/shell.ts";
+import { decideShell, isCrawlerUa, isQuestUa, shellScript, toFullPath, toMobilePath } from "../src/lib/shell.ts";
 
 const iphone =
   "Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1";
@@ -44,6 +44,18 @@ test("desktop, a fine pointer, and Quest stay on the full scene", () => {
     decideShell({ choice: null, quest: false, coarse: true, small: true, uaMobile: false, ua: desktop }),
     "full",
   );
+});
+
+test("a phone-shaped Googlebot stays on the full site", () => {
+  const googlebot =
+    "Mozilla/5.0 (Linux; Android 6.0.1; Nexus 5X Build/MMB29P) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.6778.139 Mobile Safari/537.36 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+  assert.equal(isCrawlerUa(googlebot), true);
+  assert.equal(
+    decideShell({ choice: "mobile", quest: false, coarse: true, small: true, uaMobile: true, ua: googlebot }),
+    "full",
+  );
+  assert.match(shellScript, /Googlebot/);
+  assert.match(shellScript, /if \(crawler\) return/);
 });
 
 test("an explicit choice is remembered", () => {

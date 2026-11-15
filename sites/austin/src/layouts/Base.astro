@@ -4,7 +4,6 @@ import { FORGE_STAGE_ID, resolveQuality } from "@digital-forge/runtime";
 import SiteFooter from "@digital-forge/ui/SiteFooter.astro";
 import SiteHeader from "@digital-forge/ui/SiteHeader.astro";
 import SkipLink from "@digital-forge/ui/SkipLink.astro";
-import portrait from "../assets/austin-mcgaugh.png";
 import poster from "../assets/color-orbit.jpg";
 import { brand } from "../brand/manifest";
 import Seo from "../components/Seo.astro";
@@ -35,11 +34,10 @@ const {
 } = Astro.props;
 
 const quality = resolveQuality({ force: "quiet" });
-const portraitImage = await getImage({ src: portrait, width: 800, format: "webp", quality: 72 });
 const posterAvif = await getImage({ src: poster, format: "avif", width: 960, quality: 32 });
 const posterWebp = await getImage({ src: poster, format: "webp", width: 960, quality: 42 });
 const posterJpeg = await getImage({ src: poster, format: "jpeg", width: 960, quality: 46 });
-const canonical = absoluteUrl(Astro.url.pathname === "/404/" ? "/404.html" : Astro.url.pathname);
+const canonical = noindex && /\/404(?:\.html)?\/?$/.test(Astro.url.pathname) ? undefined : absoluteUrl(Astro.url.pathname === "/404/" ? "/404.html" : Astro.url.pathname);
 const year = new Date().getUTCFullYear();
 ---
 
@@ -49,7 +47,6 @@ const year = new Date().getUTCFullYear();
       title={title}
       description={description}
       canonical={canonical}
-      portraitUrl={absoluteUrl(portraitImage.src)}
       image={image}
       ogType={ogType}
       published={published}

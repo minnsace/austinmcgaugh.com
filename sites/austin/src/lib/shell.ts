@@ -6,6 +6,9 @@ export type ShellName = "mobile" | "full";
 
 const PHONE_UA = /iPhone|iPod|Android.+Mobile|Windows Phone|IEMobile|BlackBerry|Opera Mini/i;
 const QUEST_UA = /Quest|OculusBrowser|\bOculus\b/i;
+/** Crawlers that render with a phone viewport. /m/ is noindex, so they must not be redirected there. */
+const CRAWLER_UA =
+  /Googlebot|Google-InspectionTool|bingbot|BingPreview|DuckDuckBot|Slurp|Applebot|Yandex|Baiduspider|facebookexternalhit|Twitterbot|LinkedInBot/i;
 
 export function isQuestUa(ua: string): boolean {
   return QUEST_UA.test(ua);
@@ -17,6 +20,10 @@ export function isQuestBrand(brand: string): boolean {
 
 export function isPhoneUa(ua: string): boolean {
   return PHONE_UA.test(ua);
+}
+
+export function isCrawlerUa(ua: string): boolean {
+  return CRAWLER_UA.test(ua);
 }
 
 /**
@@ -35,6 +42,9 @@ export function decideShell(input: {
   uaMobile: boolean | null;
   ua: string;
 }): ShellName {
+  // Googlebot Smartphone matches a mobile UA, a small viewport, and a coarse pointer.
+  // Sending it to noindex /m/ would drop the indexable pages. Quest still does not auto-switch.
+  if (isCrawlerUa(input.ua)) return "full";
   if (input.choice === "mobile") return "mobile";
   if (input.choice === "full" || input.quest) return "full";
   const declared = input.uaMobile === null ? isPhoneUa(input.ua) : input.uaMobile;
@@ -93,8 +103,15 @@ export const shellScript = `(function(){
   var uaMobile = data && typeof data.mobile === "boolean" ? data.mobile : null;
   var ua = navigator.userAgent || "";
   var declared = uaMobile === null ? phoneUa(ua) : uaMobile;
+  // Search and preview bots often crawl with a phone viewport and a coarse pointer
+  // (Googlebot Smartphone is the usual case). /m/ is noindex and its canonicals point
+  // at these pages, so a redirect there would hide the indexable HTML. Crawlers stay
+  // on the full site: no visibility:hidden, and no location.replace onto /m/.
+  // Quest does not auto-switch. Humans on phones still go to /m/.
+  var crawler = /Googlebot|Google-InspectionTool|bingbot|BingPreview|DuckDuckBot|Slurp|Applebot|Yandex|Baiduspider|facebookexternalhit|Twitterbot|LinkedInBot/i.test(ua);
   var shell = "full";
-  if (choice === "mobile") shell = "mobile";
+  if (crawler) shell = "full";
+  else if (choice === "mobile") shell = "mobile";
   else if (choice === "full" || quest()) shell = "full";
   else if (coarse && small && declared) shell = "mobile";
   document.documentElement.dataset.shell = shell;
@@ -102,6 +119,7 @@ export const shellScript = `(function(){
   if (path !== "/" && !path.endsWith("/") && !/\\.[a-z0-9]+$/i.test(path)) path += "/";
   var onMobile = path === "/m/" || path.indexOf("/m/") === 0;
   var skip = /\\.(xml|txt|png|jpe?g|webp|avif|svg|glb|hdr|ico|js|css|map|woff2?)$/i.test(path) || path === "/404.html";
+  if (crawler) return;
   if (!skip && shell === "mobile" && !onMobile) {
     document.documentElement.style.visibility = "hidden";
     location.replace((path === "/" ? "/m/" : "/m" + path) + location.search + location.hash);

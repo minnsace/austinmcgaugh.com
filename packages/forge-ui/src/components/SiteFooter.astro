@@ -31,6 +31,22 @@ const { brand, year } = Astro.props;
           }
         </ul>
       </nav>
+      {
+        brand.organization.studioLinks && brand.organization.studioLinks.length > 0 && (
+          <nav aria-label="Studio">
+            <ul class="social-list">
+              {brand.organization.studioLinks.map((link) => (
+                <li>
+                  <a href={link.href} rel="noopener noreferrer" target="_blank">
+                    {link.label}
+                    <span class="visually-hidden"> (opens in a new tab)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        )
+      }
     </div>
     <div class="footer-meta">
       <a href="/about/">About</a>

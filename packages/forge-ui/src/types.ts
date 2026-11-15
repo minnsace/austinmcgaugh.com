@@ -35,7 +35,10 @@ export interface BrandOrganization {
   name: string;
   url: string;
   email?: string;
+  logo?: string;
   sameAs?: string[];
+  /** Visible studio links. Separate from sameAs so the footer does not list every profile. */
+  studioLinks?: SocialLink[];
 }
 
 /**

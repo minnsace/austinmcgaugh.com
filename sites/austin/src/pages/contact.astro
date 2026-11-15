@@ -1,0 +1,20 @@
+---
+import { absoluteUrl } from "../lib/urls";
+
+const canonical = absoluteUrl("/about/");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Contact — Austin McGaugh</title>
+    <link rel="canonical" href={canonical} />
+    <meta name="robots" content="noindex" />
+    <meta http-equiv="refresh" content="0;url=/about/#contact" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <p><a href="/about/#contact">Contact Austin McGaugh</a></p>
+  </body>
+</html>

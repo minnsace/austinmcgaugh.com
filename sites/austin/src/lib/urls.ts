@@ -5,8 +5,10 @@ export function absoluteUrl(pathOrUrl: string): string {
   return new URL(pathOrUrl, `${brand.url}/`).href;
 }
 
+export const homeTitle = "Austin McGaugh — Software Engineer, Game Developer & Founder of Minnsace Inc.";
+
 export function pageTitle(title?: string): string {
-  if (!title || title === brand.name) return brand.name;
+  if (!title || title === brand.name) return homeTitle;
   return `${title} — ${brand.name}`;
 }
 

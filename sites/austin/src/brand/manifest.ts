@@ -8,7 +8,8 @@ export const brand = {
   name: "Austin McGaugh",
   url: "https://austinmcgaugh.com",
   email: "contact@austinmcgaugh.com",
-  description: "Personal site of Austin McGaugh, software engineer and founder of Minnsace Inc.",
+  description:
+    "Austin McGaugh is a software engineer, game developer, and founder of Minnsace Inc. The Lethecary is in development. Deadlight Tavern is on Steam. FreeSnakeGame.com is a browser game.",
   tagline: "Software engineer, game developer, and founder of Minnsace Inc.",
   feed: "/journal/rss.xml",
   colors: {
@@ -58,7 +59,20 @@ export const brand = {
   organization: {
     name: "Minnsace Inc.",
     url: "https://minnsace.com/",
-    email: "contact@austinmcgaugh.com",
+    email: "hello@minnsace.com",
+    logo: "https://austinmcgaugh.com/apple-touch-icon.png",
+    sameAs: [
+      "https://www.linkedin.com/company/minnsace",
+      "https://github.com/minnsace",
+      "https://x.com/minnsace",
+      "https://itch.io/profile/minnsace",
+      "https://store.steampowered.com/app/2071710/Deadlight_Tavern/",
+    ],
+    studioLinks: [
+      { id: "site", label: "minnsace.com", href: "https://minnsace.com/" },
+      { id: "github", label: "GitHub", href: "https://github.com/minnsace" },
+      { id: "itch", label: "itch.io", href: "https://itch.io/profile/minnsace" },
+    ],
   },
 } satisfies Brand;
 

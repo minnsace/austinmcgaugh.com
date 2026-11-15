@@ -5,9 +5,20 @@ import { absoluteUrl } from "./urls";
 
 const personId = `${brand.url}/#person`;
 const websiteId = `${brand.url}/#website`;
-const organizationId = `${brand.organization.url}#organization`;
+const organizationId = "https://minnsace.com/#organization";
+const portraitUrl = absoluteUrl("/austin-mcgaugh.webp");
+const shareImage = absoluteUrl("/og.png");
 
-export function baseGraph(portraitUrl: string): Record<string, unknown>[] {
+const personSameAs = [
+  "https://x.com/AustinMcGaugh",
+  "https://www.linkedin.com/in/austinmcgaugh/",
+  "https://www.youtube.com/@AustinMcGaugh",
+  "https://github.com/minnsace",
+  "https://minnsace.com/",
+  "https://itch.io/profile/minnsace",
+];
+
+export function baseGraph(): Record<string, unknown>[] {
   return [
     {
       "@type": "WebSite",
@@ -25,9 +36,9 @@ export function baseGraph(portraitUrl: string): Record<string, unknown>[] {
       url: `${brand.url}/`,
       email: brand.email,
       description: brand.tagline,
-      jobTitle: "Software engineer and game developer",
+      jobTitle: "Software engineer, game developer, and Founder of Minnsace Inc.",
       image: portraitUrl,
-      sameAs: brand.socials.map((social) => social.href),
+      sameAs: personSameAs,
       worksFor: { "@id": organizationId },
     },
     {
@@ -36,7 +47,12 @@ export function baseGraph(portraitUrl: string): Record<string, unknown>[] {
       name: brand.organization.name,
       url: brand.organization.url,
       email: brand.organization.email,
+      logo: {
+        "@type": "ImageObject",
+        url: brand.organization.logo,
+      },
       founder: { "@id": personId },
+      sameAs: brand.organization.sameAs,
     },
   ];
 }
@@ -84,27 +100,52 @@ export function articleGraph(post: CollectionEntry<"journal">, canonical: string
 }
 
 export function projectGraph(project: CollectionEntry<"projects">, canonical: string): Record<string, unknown>[] {
+  const lethecary = project.id === "the-lethecary";
+  const deadlight = project.id === "deadlight-tavern";
+  const game: Record<string, unknown> = {
+    "@type": "VideoGame",
+    name: project.data.title,
+    description: project.data.description,
+    url: deadlight || lethecary ? canonical : (project.data.url ?? canonical),
+    image: shareImage,
+    inLanguage: "en",
+    author: { "@id": organizationId },
+    publisher: { "@id": organizationId },
+  };
+  if (lethecary) {
+    game.genre = ["psychological horror", "first-person"];
+    game.gamePlatform = ["PC", "Windows"];
+    game.creativeWorkStatus = "In development";
+  } else if (deadlight) {
+    game.genre = ["Action", "Indie"];
+    game.gamePlatform = project.data.platform;
+    game.sameAs = project.data.url ? [project.data.url] : undefined;
+    game.datePublished = project.data.date ? project.data.date.toISOString().slice(0, 10) : undefined;
+    game.offers = project.data.price
+      ? {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+          description: project.data.price,
+          url: canonical,
+        }
+      : undefined;
+  } else {
+    game.sameAs = project.data.repository;
+    game.operatingSystem = project.data.platform;
+    game.datePublished = project.data.date ? project.data.date.toISOString().slice(0, 10) : undefined;
+    game.offers = project.data.price
+      ? {
+          "@type": "Offer",
+          price: "0",
+          priceCurrency: "USD",
+          description: project.data.price,
+          url: project.data.url ?? canonical,
+        }
+      : undefined;
+  }
   return [
-    {
-      "@type": "VideoGame",
-      name: project.data.title,
-      description: project.data.description,
-      url: project.data.url ?? canonical,
-      sameAs: project.data.repository,
-      datePublished: project.data.date ? project.data.date.toISOString().slice(0, 10) : undefined,
-      operatingSystem: project.data.platform,
-      author: { "@id": organizationId },
-      publisher: { "@id": organizationId },
-      offers: project.data.price
-        ? {
-            "@type": "Offer",
-            price: "0",
-            priceCurrency: "USD",
-            description: project.data.price,
-            url: project.data.url ?? canonical,
-          }
-        : undefined,
-    },
+    game,
     breadcrumb([
       { name: "Projects", url: absoluteUrl("/projects/") },
       { name: project.data.title, url: canonical },

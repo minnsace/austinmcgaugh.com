@@ -1,3 +1,6 @@
+import { copyFile } from "node:fs/promises";
+import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import { defineConfig } from "astro/config";
@@ -15,8 +18,21 @@ export default defineConfig({
         !/\/(404|work|writing|knowledge|contact)(\/|\.html)?$/.test(page) &&
         !page.includes("/writing/") &&
         !page.includes("/knowledge/") &&
-        !page.includes("/m/"),
+        !page.includes("/m/") &&
+        !page.includes("/projects/lethecary/"),
+      serialize(item) {
+        return { ...item, lastmod: item.lastmod ?? new Date().toISOString() };
+      },
     }),
+    {
+      name: "sitemap-xml",
+      hooks: {
+        "astro:build:done": async ({ dir }) => {
+          const root = fileURLToPath(dir);
+          await copyFile(join(root, "sitemap-index.xml"), join(root, "sitemap.xml"));
+        },
+      },
+    },
   ],
   redirects: {
     "/work/": "/projects/",
@@ -24,7 +40,7 @@ export default defineConfig({
     "/knowledge/": "/journal/",
     "/knowledge/rss.xml": "/journal/rss.xml",
     "/writing/rss.xml": "/journal/rss.xml",
-    "/contact/": "/about/#contact",
+    "/projects/lethecary/": "/projects/the-lethecary/",
   },
   build: {
     format: "directory",

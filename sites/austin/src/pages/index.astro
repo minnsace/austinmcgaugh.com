@@ -12,11 +12,9 @@ const updates = await loadWorkshop();
 const datedProjects = projects.filter((project) => project.data.date);
 const latestProject = datedProjects.sort((a, b) => b.data.date!.getTime() - a.data.date!.getTime())[0];
 
-const description =
-  "Austin McGaugh is a software engineer and game developer, and founder of Minnsace Inc. Projects include FreeSnakeGame.com.";
 ---
 
-<Base description={description}>
+<Base description={brand.description}>
   <ContentPanel variant="hero">
     <p class="kicker">Software engineer · Game developer</p>
     <h1>I build software and <span class="accent">games.</span></h1>
