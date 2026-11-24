@@ -1,3 +1,10 @@
+{
+  "status": 200,
+  "path": "sites/austin/src/brand/manifest.ts",
+  "sha": "11334583180f10eb2cab387e86587184b2a665e7",
+  "size": 2756
+}
+--- file content ---
 import type { Brand } from "@digital-forge/ui/types";
 
 /**
@@ -72,6 +79,7 @@ export const brand = {
       "https://www.youtube.com/@Minnsace",
       "https://www.tiktok.com/@minnsace",
       "https://bsky.app/profile/minnsace.com",
+      "https://www.facebook.com/profile.php?id=61577445890097",
     ],
     studioLinks: [
       { id: "site", label: "minnsace.com", href: "https://minnsace.com/" },
@@ -82,3 +90,4 @@ export const brand = {
 } satisfies Brand;
 
 export type AustinBrand = typeof brand;
+
