@@ -72,6 +72,7 @@ export const brand = {
       "https://www.youtube.com/@Minnsace",
       "https://www.tiktok.com/@minnsace",
       "https://bsky.app/profile/minnsace.com",
+      "https://www.facebook.com/profile.php?id=61577445890097",
     ],
     studioLinks: [
       { id: "site", label: "minnsace.com", href: "https://minnsace.com/" },
@@ -82,3 +83,4 @@ export const brand = {
 } satisfies Brand;
 
 export type AustinBrand = typeof brand;
+
