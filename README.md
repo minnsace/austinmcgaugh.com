@@ -1,6 +1,6 @@
 # Austin McGaugh
 
-Personal site for [austinmcgaugh.com](https://austinmcgaugh.com), rebuilt as phase 1 of the Digital Forge. The HTML is the product. A later phase hangs the same pages over a Three.js scene. [minnsace.com](https://minnsace.com/) can reuse the runtime and the interface with its own brand file.
+Personal site for [austinmcgaugh.com](https://austinmcgaugh.com), built as the Digital Forge. The HTML is the product: the same pages hang over a Three.js scene with WebXR support, and they stay complete with the scene off. [minnsace.com](https://minnsace.com/) can reuse the runtime and the interface with its own brand file.
 
 The design notes live in [docs/DIGITAL-FORGE.md](docs/DIGITAL-FORGE.md).
 
@@ -29,7 +29,7 @@ npm run preview   # serve sites/austin/dist
 
 | Path | What it is |
 | --- | --- |
-| `packages/forge-runtime` | Renderer, shot sequencer, and quality switch. Phase 1 is a stub and does not import Three.js. |
+| `packages/forge-runtime` | Three.js renderer, shot sequencer, quality switch, and the WebXR session. Three.js is imported only inside this package. |
 | `packages/forge-ui` | Skip link, navigation, footer, panels, portal symbols, and the video facade. |
 | `sites/austin` | This site: pages, Markdown, and the brand manifest. |
 | `sites/austin/src/brand/manifest.ts` | Name, colors, socials, portals, and the studio record. |
@@ -123,7 +123,7 @@ The studio introduction itself is the page at `sites/austin/src/pages/workshop/i
 
 ## Images
 
-The portrait source is `sites/austin/src/assets/austin-mcgaugh.png`. The build writes responsive AVIF and WebP. Do not put that PNG in `public/`. The background still is `sites/austin/src/assets/color-orbit.jpg`. It is the fixed poster behind the panels. Phase 2 mounts the canvas in that same frame.
+The portrait source is `sites/austin/src/assets/austin-mcgaugh.png`. The build writes responsive AVIF and WebP. Do not put that PNG in `public/`. The background still is `sites/austin/src/assets/color-orbit.jpg`. It is the fixed poster behind the panels. The stage mounts its canvas in that same frame, over the poster, and the poster stays for quiet mode.
 
 ## Deploy
 
