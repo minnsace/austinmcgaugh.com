@@ -1,10 +1,3 @@
-{
-  "status": 200,
-  "path": "sites/austin/src/brand/manifest.ts",
-  "sha": "11334583180f10eb2cab387e86587184b2a665e7",
-  "size": 2756
-}
---- file content ---
 import type { Brand } from "@digital-forge/ui/types";
 
 /**
