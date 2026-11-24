@@ -55,6 +55,8 @@ export const brand = {
     { id: "x", label: "X", href: "https://x.com/AustinMcGaugh" },
     { id: "linkedin", label: "LinkedIn", href: "https://www.linkedin.com/in/austinmcgaugh/" },
     { id: "youtube", label: "YouTube", href: "https://www.youtube.com/@AustinMcGaugh" },
+    { id: "github", label: "GitHub", href: "https://github.com/minnsace" },
+    { id: "instagram", label: "Instagram", href: "https://www.instagram.com/austinmcgaugh/" },
   ],
   organization: {
     name: "Minnsace Inc.",
@@ -67,6 +69,9 @@ export const brand = {
       "https://x.com/minnsace",
       "https://itch.io/profile/minnsace",
       "https://store.steampowered.com/app/2071710/Deadlight_Tavern/",
+      "https://www.youtube.com/@Minnsace",
+      "https://www.tiktok.com/@minnsace",
+      "https://bsky.app/profile/minnsace.com",
     ],
     studioLinks: [
       { id: "site", label: "minnsace.com", href: "https://minnsace.com/" },
