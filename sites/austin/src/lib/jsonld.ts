@@ -14,6 +14,8 @@ const personSameAs = [
   "https://www.linkedin.com/in/austinmcgaugh/",
   "https://www.youtube.com/@AustinMcGaugh",
   "https://github.com/minnsace",
+  "https://github.com/AustinMcGaugh",
+  "https://www.instagram.com/austinmcgaugh/",
   "https://minnsace.com/",
   "https://itch.io/profile/minnsace",
 ];
